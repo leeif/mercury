@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:b9282a57ab3d399b45fd176770f4b520ceb4e826d53e394c095a46bc1668e503"
+  name = "github.com/Workiva/go-datastructures"
+  packages = ["tree/avl"]
+  pruneopts = "UT"
+  revision = "f07cbe3f82ca2fd6e5ab94afce65fe43319f675f"
+  version = "v1.0.50"
+
+[[projects]]
   digest = "1:7b5c6e2eeaa9ae5907c391a91c132abfd5c9e8a784a341b5625e750c67e6825d"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -12,6 +20,9 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/gorilla/websocket"]
+  input-imports = [
+    "github.com/Workiva/go-datastructures/tree/avl",
+    "github.com/gorilla/websocket",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

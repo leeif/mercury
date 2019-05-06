@@ -13,7 +13,8 @@ import (
 
 var port = flag.String("port", "9090", "chat server port")
 var host = flag.String("host", "localhost", "chat server host address")
-var path = flag.String("path", "/", "chat room path")
+var path = flag.String("path", "/ws/connect", "ws connection path")
+var token = flag.String("token", "", "chat token")
 
 func main() {
 	flag.Parse()
@@ -24,6 +25,7 @@ func main() {
 	addr := *host + ":" + *port
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: *path}
+	u.RawQuery = "token=" + *token
 	utils.Info("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)

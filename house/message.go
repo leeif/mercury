@@ -1,24 +1,14 @@
-package room
+package house
 
 import (
 	"encoding/json"
-)
-
-// Message type
-const (
-	// REGISTERROOM : register user into a chat room
-	REGISTERROOM = iota
-	// SENDTOROOM : send a message to a room
-	SENDMESSAGE
+	"errors"
+	"time"
+	"mercury/storage"
 )
 
 type Message struct {
-	MsgType    int      `json:"-"`
-	FromID     string   `json:"fromID"`
-	ToID       string   `json:"toID"`
-	RoomID     []string `json:"roomID"`
-	CreateTime string   `json:"createTime"`
-	Body       string   `json:"body"`
+	storage.MessageBase
 }
 
 type Response struct {
@@ -42,12 +32,17 @@ func NewMessage(data []byte) (*Message, error) {
 		return nil, err
 	}
 
+	// message create timestamp(s)
+	msg.CreateTime = time.Now().Unix()
 	if msgMap["msgType"] != nil {
 		msg.MsgType = int(msgMap["msgType"].(float64))
+	} else {
+		return nil, errors.New("No msgType")
 	}
 
 	if msgMap["toID"] != nil {
-		msg.ToID = msgMap["toID"].(string)
+		msg.MID = make([]string, 2)
+		msg.MID[0] = msgMap["toID"].(string)
 	}
 
 	if msgMap["roomID"] != nil {
@@ -55,11 +50,11 @@ func NewMessage(data []byte) (*Message, error) {
 		for i, v := range msgMap["roomID"].([]interface{}) {
 			roomID[i] = v.(string)
 		}
-		msg.RoomID = roomID
+		msg.RID = roomID
 	}
 
-	if msgMap["body"] != nil {
-		msg.Body = msgMap["body"].(string)
+	if msgMap["text"] != nil {
+		msg.Text = msgMap["text"].(string)
 	}
 
 	return msg, nil

@@ -15,7 +15,7 @@ func init() {
 
 // NewSHA1Hash generates a new SHA1 hash based on
 // a random number of characters.
-func TokenGenerator(n ...int) string {
+func TokenGenerator(prefix string, n ...int) string {
 	noRandomCharacters := 32
 
 	if len(n) > 0 {
@@ -25,7 +25,7 @@ func TokenGenerator(n ...int) string {
 	randString := RandomString(noRandomCharacters)
 
 	hash := sha1.New()
-	hash.Write([]byte(randString))
+	hash.Write([]byte(prefix+randString))
 	bs := hash.Sum(nil)
 
 	return fmt.Sprintf("%x", bs)
