@@ -13,7 +13,7 @@ func init() {
 }
 
 type House struct {
-	store  *storage.Store
+	store *storage.Store
 }
 
 func (house *House) RoomAdd(roomID string, members []string) {
@@ -31,11 +31,10 @@ func (house *House) RoomDelete(roomID string) {
 }
 
 func (house *House) roomMessage(message *Message) {
-	for _, roomID := range message.RID {
-		room := house.GetRoom(roomID)
-		if room != nil {
-			room.receiveMessage <- message
-		}
+	room := house.GetRoom(message.RID)
+	if room != nil {
+		room.receiveMessage <- message
+		house.store.Message.Insert(room.ID, message)
 	}
 }
 

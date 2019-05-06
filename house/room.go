@@ -44,15 +44,32 @@ func (room *Room) TransferMessage(message *Message) {
 		if member != nil {
 			if !member.isClosed {
 				utils.Debug("member id : %s", member.ID)
-				member.conn.Send <- []byte(message.Text)
-				// position increament, should be locked in the furture
+				if b, err := message.json(); err  == nil {
+					member.conn.Send <- b
+					// position increament, should be locked in the furture
+					position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
+					house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+				}
 			}
 		}
 	}
 }
 
 func (room *Room) TransferUnReadMessage(member *Member) {
-
+	position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
+	messages := house.store.Message.Get(room.ID, position)
+	if messages == nil {
+		return
+	}
+	for _, v := range messages {
+		message := v.(*Message)
+		if b, err := message.json(); err == nil && !member.isClosed {
+			member.conn.Send <- b
+			// position increament, should be locked in the furture
+			position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
+			house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+		}
+	}
 }
 
 func (room *Room) Work() {

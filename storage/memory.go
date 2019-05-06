@@ -50,7 +50,22 @@ func (r *RoomInMemory) Get(rid ...string) []avl.Entry {
 }
 
 type MessageInMemory struct {
-	message *avl.Immutable
+	message map[string][]interface{}
+}
+
+func (m *MessageInMemory) Insert(rid string, message ...interface{}) {
+	if m.message[rid] == nil {
+		m.message[rid] = make([]interface{}, 0)
+	}
+	m.message[rid] = append(m.message[rid], message...)
+}
+
+func (m *MessageInMemory) Get(rid string, position int) []interface{} {
+	if m.message[rid] != nil && len(m.message[rid]) > position {
+		return m.message[rid][position:]
+	} else {
+		return nil
+	}
 }
 
 type TokenInMemory struct {
@@ -68,7 +83,7 @@ func (t *TokenInMemory) Get(token string) string {
 type IndexInMemory struct {
 	roomMember        map[string]map[string]bool
 	memberRoom        map[string]map[string]bool
-	rommMemberMessage map[string]string
+	rommMemberMessage map[string]int
 }
 
 func (i *IndexInMemory) SetMemberOfRoom(rid string, mid string) {
@@ -99,4 +114,14 @@ func (i *IndexInMemory) GetRoomFromMember(mid string) []string {
 		res = append(res, k)
 	}
 	return res
+}
+
+func (i *IndexInMemory) SetRoomMemberMessage(rid string, mid string, position int) {
+	rmid := rid + ":" + mid
+	i.rommMemberMessage[rmid] = position
+}
+
+func (i *IndexInMemory) GetRoomMemberMessage(rid string, mid string) int {
+	rmid := rid + ":" + mid
+	return i.rommMemberMessage[rmid]
 }

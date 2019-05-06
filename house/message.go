@@ -40,17 +40,12 @@ func NewMessage(data []byte) (*Message, error) {
 		return nil, errors.New("No msgType")
 	}
 
-	if msgMap["toID"] != nil {
-		msg.MID = make([]string, 2)
-		msg.MID[0] = msgMap["toID"].(string)
+	if msgMap["mid"] != nil {
+		msg.MID = msgMap["mid"].(string)
 	}
 
-	if msgMap["roomID"] != nil {
-		roomID := make([]string, len(msgMap["roomID"].([]interface{})))
-		for i, v := range msgMap["roomID"].([]interface{}) {
-			roomID[i] = v.(string)
-		}
-		msg.RID = roomID
+	if msgMap["rid"] != nil {
+		msg.RID = msgMap["rid"].(string)
 	}
 
 	if msgMap["text"] != nil {

@@ -39,14 +39,14 @@ func (mb *MemberBase) Compare(entry avl.Entry) int {
 }
 
 type MessageBase struct {
-	ID      int
-	MsgType int
-	// mid[0] to, mid[1] from
-	MID []string
+	ID         int        `json:"id"`
+	MsgType    int        `json:"msgType"`
+	// from member id
+	MID        string     `jsom:"mid"`
 	// room id
-	RID        []string
-	CreateTime int64
-	Text       string
+	RID        string     `json:"mid"`
+	CreateTime int64      `json:"createTime"`
+	Text       string     `json:"text"`
 }
 
 type RoomMemberIndex struct {

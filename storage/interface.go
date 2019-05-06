@@ -20,8 +20,8 @@ type Token interface {
 }
 
 type Message interface {
-	Insert(...interface{})
-	Get(...string) []avl.Entry
+	Insert(string, ...interface{})
+	Get(string, int) []interface{}
 }
 
 type Index interface {
@@ -29,6 +29,8 @@ type Index interface {
 	GetMemberFromRoom(string) []string
 	SetRoomOfMember(string, string)
 	GetRoomFromMember(string) []string
+	SetRoomMemberMessage(string, string, int)
+	GetRoomMemberMessage(string, string) int
 }
 
 type Store struct {
@@ -43,7 +45,7 @@ func NewStore() *Store {
 	return &Store {
 		Room:    newRoom(),
 		Member:  newMember(),
-		// Message: newMessage(),
+		Message: newMessage(),
 		Token:   newToken(),
 		Index:   newIndex(),
 	}
@@ -61,17 +63,17 @@ func newMember() Member {
 	}
 }
 
-// func newMessage() Message {
-// 	return &MessageInMemory {
-// 		message: avl.NewImmutable(),
-// 	}
-// }
+func newMessage() Message {
+	return &MessageInMemory {
+		message: make(map[string][]interface{}),
+	}
+}
 
 func newIndex() Index {
 	return &IndexInMemory {
 		memberRoom:        make(map[string]map[string]bool),
 		roomMember:        make(map[string]map[string]bool),
-		rommMemberMessage: make(map[string]string),
+		rommMemberMessage: make(map[string]int),
 	}
 }
 
