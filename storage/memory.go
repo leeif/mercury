@@ -2,6 +2,7 @@ package storage
 
 import (
 	"mercury/utils"
+	"reflect"
 
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 )
@@ -60,12 +61,26 @@ func (m *MessageInMemory) Insert(rid string, message ...interface{}) {
 	m.message[rid] = append(m.message[rid], message...)
 }
 
-func (m *MessageInMemory) Get(rid string, position int) []interface{} {
+func (m *MessageInMemory) GetHistory(rid string, msg_id int, offset int) []interface{} {
+	var end int
+	for i, msg := range m.message[rid] {
+		v := reflect.ValueOf(msg)
+		if int(reflect.Indirect(v).FieldByName("ID").Int()) == msg_id {
+			end = i
+			break
+		}
+	}
+	if end-offset < 0 {
+		return m.message[rid][:end]
+	}
+	return m.message[rid][(end - offset - 1):end]
+}
+
+func (m *MessageInMemory) GetUnRead(rid string, position int) []interface{} {
 	if m.message[rid] != nil && len(m.message[rid]) > position {
 		return m.message[rid][position:]
-	} else {
-		return nil
 	}
+	return nil
 }
 
 type TokenInMemory struct {

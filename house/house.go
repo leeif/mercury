@@ -38,6 +38,11 @@ func (house *House) roomMessage(message *Message) {
 	}
 }
 
+func (house *House) roomHistory(history *History) []interface{} {
+	messages := house.store.Message.GetHistory(history.RID, history.MsgID, history.Offest)
+	return messages
+}
+
 func (house *House) GetRoom(id string) *Room {
 	res := house.store.Room.Get(id)
 	if len(res) > 0 && res[0] != nil {

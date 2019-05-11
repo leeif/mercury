@@ -6,7 +6,6 @@ import (
 	"mercury/storage"
 	"mercury/utils"
 	"net/http"
-
 	"github.com/gorilla/websocket"
 )
 
@@ -23,20 +22,31 @@ type Member struct {
 
 func (member *Member) connCallback(flag int, data []byte) {
 	switch flag {
-	case c.FLAG_RECEV_MESSAGE:
+	case c.MSG:
 		member.connRecevMessage(data)
-	case c.FLAG_CONN_CLOSE:
+	case c.CLOSE:
 		member.connClose()
 	}
 }
 
 func (member *Member) connRecevMessage(data []byte) {
-	message, err := NewMessage(data)
+	t, item, err := New(data)
 	if err != nil {
 		return
 	}
-	message.MID = member.ID
-	house.roomMessage(message)
+	switch t {
+	case SEND:
+		message := item.(*Message)
+		message.MID = member.ID
+		house.roomMessage(message)
+	case HISTORY:
+		history := item.(*History)
+		messages := house.roomHistory(history)
+		res := Response{Status:"ok", Body: messages}
+		if b, err := res.json(); err == nil {
+			member.conn.Send <- b
+		}
+	}
 }
 
 func (member *Member) connClose() {

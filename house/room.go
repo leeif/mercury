@@ -57,7 +57,7 @@ func (room *Room) TransferMessage(message *Message) {
 
 func (room *Room) TransferUnReadMessage(member *Member) {
 	position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-	messages := house.store.Message.Get(room.ID, position)
+	messages := house.store.Message.GetUnRead(room.ID, position)
 	if messages == nil {
 		return
 	}

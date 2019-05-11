@@ -8,9 +8,9 @@ import (
 // Message type
 const (
 	// REGISTERROOM : register user into a chat room
-	FLAG_RECEV_MESSAGE = iota
+	MSG = iota
 	// SENDTOROOM : send a message to a room
-	FLAG_CONN_CLOSE
+	CLOSE
 )
 
 // Connection struct for each websocket connection
@@ -24,7 +24,7 @@ type Connection struct {
 func (c *Connection) Reader(callback func(int, []byte)) {
 	defer func () {
 		c.Ws.Close()
-		callback(FLAG_CONN_CLOSE, nil)
+		callback(CLOSE, nil)
 	}()
 	for {
 		_, message, err := c.Ws.ReadMessage()
@@ -33,7 +33,7 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 			break
 		}
 		utils.Info("recv: %s", message)
-		callback(FLAG_RECEV_MESSAGE, message)
+		callback(MSG, message)
 	}
 }
 
@@ -41,7 +41,7 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 func (c *Connection) Writer(callback func(int, []byte)) {
 	defer func () {
 		c.Ws.Close()
-		callback(FLAG_CONN_CLOSE, nil)
+		callback(CLOSE, nil)
 	}()
 	for {
 		select {

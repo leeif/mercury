@@ -21,7 +21,8 @@ type Token interface {
 
 type Message interface {
 	Insert(string, ...interface{})
-	Get(string, int) []interface{}
+	GetUnRead(string, int) []interface{}
+	GetHistory(string, int, int) []interface{}
 }
 
 type Index interface {
