@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"mercury/house"
-	"mercury/utils"
+	"github.com/leeif/mercury/house"
+	"github.com/leeif/mercury/utils"
 	"net/http"
 	"strings"
 )

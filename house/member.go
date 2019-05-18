@@ -2,11 +2,12 @@ package house
 
 import (
 	"log"
-	c "mercury/connection"
-	"mercury/storage"
-	"mercury/utils"
 	"net/http"
+
 	"github.com/gorilla/websocket"
+	c "github.com/leeif/mercury/connection"
+	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/utils"
 )
 
 var (
@@ -42,7 +43,7 @@ func (member *Member) connRecevMessage(data []byte) {
 	case HISTORY:
 		history := item.(*History)
 		messages := house.roomHistory(history)
-		res := Response{Status:"ok", Body: messages}
+		res := Response{Status: "ok", Body: messages}
 		if b, err := res.json(); err == nil {
 			member.conn.Send <- b
 		}

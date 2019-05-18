@@ -1,8 +1,8 @@
 package connection
 
 import (
-	"mercury/utils"
 	"github.com/gorilla/websocket"
+	"github.com/leeif/mercury/utils"
 )
 
 // Message type
@@ -22,7 +22,7 @@ type Connection struct {
 
 // Reader :
 func (c *Connection) Reader(callback func(int, []byte)) {
-	defer func () {
+	defer func() {
 		c.Ws.Close()
 		callback(CLOSE, nil)
 	}()
@@ -37,9 +37,9 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 	}
 }
 
-// Writer : 
+// Writer :
 func (c *Connection) Writer(callback func(int, []byte)) {
-	defer func () {
+	defer func() {
 		c.Ws.Close()
 		callback(CLOSE, nil)
 	}()

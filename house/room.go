@@ -1,8 +1,8 @@
 package house
 
 import (
-	"mercury/utils"
-	"mercury/storage"
+	"github.com/leeif/mercury/utils"
+	"github.com/leeif/mercury/storage"
 )
 
 type Room struct {

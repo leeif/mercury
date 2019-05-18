@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"mercury/utils"
 	"reflect"
+
+	"github.com/leeif/mercury/utils"
 
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 )

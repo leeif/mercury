@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"mercury/utils"
+	"github.com/leeif/mercury/utils"
 	"net/http"
 	"net/url"
 	"os"

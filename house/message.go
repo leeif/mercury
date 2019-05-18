@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
-	"mercury/storage"
+	"github.com/leeif/mercury/storage"
 )
 
 const (

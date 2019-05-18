@@ -1,8 +1,8 @@
 package house
 
 import (
-	"mercury/storage"
-	"mercury/utils"
+	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/utils"
 )
 
 var house House
