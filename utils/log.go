@@ -32,4 +32,5 @@ func Warning(format string, v ...interface{}) {
 
 func Error(format string, v ...interface{}) {
 	logger.Fatalf("[ERROR] "+format, v...)
+	os.Exit(1)
 }
