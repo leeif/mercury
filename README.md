@@ -9,6 +9,10 @@ How Mercury Work
 ----
 (In Progress...)
 
+Feature of Mercury
+----
+(In Progress...)
+
 Simple Demo
 ----
 ```
