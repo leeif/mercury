@@ -2,7 +2,8 @@ package connection
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/leeif/mercury/utils"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 // Message type
@@ -11,6 +12,10 @@ const (
 	MSG = iota
 	// SENDTOROOM : send a message to a room
 	CLOSE
+)
+
+var (
+	logger log.Logger
 )
 
 // Connection struct for each websocket connection
@@ -29,10 +34,10 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 	for {
 		_, message, err := c.Ws.ReadMessage()
 		if err != nil {
-			utils.Info("read:", err)
+			level.Error(logger).Log("readError",err)
 			break
 		}
-		utils.Info("recv: %s", message)
+		level.Debug(logger).Log("recvMsg", message)
 		callback(MSG, message)
 	}
 }
@@ -63,4 +68,8 @@ func (c *Connection) Writer(callback func(int, []byte)) {
 			}
 		}
 	}
+}
+
+func WithLogger(l log.Logger) {
+	logger = log.With(l, "component", "connection")
 }

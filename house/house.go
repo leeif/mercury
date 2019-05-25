@@ -1,16 +1,16 @@
 package house
 
 import (
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/leeif/mercury/common"
 	"github.com/leeif/mercury/storage"
-	"github.com/leeif/mercury/utils"
 )
 
-var house House
-
-func init() {
-	house = House{}
-	house.store = storage.NewStore()
-}
+var (
+	house  *House
+	logger log.Logger
+)
 
 type House struct {
 	store *storage.Store
@@ -46,7 +46,7 @@ func (house *House) roomHistory(history *History) []interface{} {
 func (house *House) GetRoom(id string) *Room {
 	res := house.store.Room.Get(id)
 	if len(res) > 0 && res[0] != nil {
-		utils.Debug("room : %v", res[0].(*Room).ID)
+		level.Debug(logger).Log("roomID", res[0].(*Room).ID)
 		return res[0].(*Room)
 	}
 	return house.NewRoom(id)
@@ -94,7 +94,6 @@ func (house *House) GetMemberFromToken(token string) *Member {
 	}
 
 	res := house.store.Member.Get(id)
-	utils.Debug("%v", res[0])
 	if len(res) > 0 && res[0] != nil {
 		return res[0].(*Member)
 	}
@@ -102,11 +101,17 @@ func (house *House) GetMemberFromToken(token string) *Member {
 }
 
 func (house *House) GetToken(id string) string {
-	token := utils.TokenGenerator(id)
+	token := common.TokenGenerator(id)
 	house.store.Token.Insert(token, id)
 	return token
 }
 
-func GetHouse() *House {
-	return &house
+func NewHouse(l log.Logger) *House {
+	if house == nil {
+		house = &House{
+			store: storage.NewStore(),
+		}
+	}
+	logger = log.With(l, "component", "house")
+	return house
 }

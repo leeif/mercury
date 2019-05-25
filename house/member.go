@@ -1,13 +1,12 @@
 package house
 
 import (
-	"log"
 	"net/http"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
 	c "github.com/leeif/mercury/connection"
 	"github.com/leeif/mercury/storage"
-	"github.com/leeif/mercury/utils"
 )
 
 var (
@@ -31,7 +30,7 @@ func (member *Member) connCallback(flag int, data []byte) {
 }
 
 func (member *Member) connRecevMessage(data []byte) {
-	t, item, err := New(data)
+	t, item, err := newMessage(data)
 	if err != nil {
 		return
 	}
@@ -51,7 +50,6 @@ func (member *Member) connRecevMessage(data []byte) {
 }
 
 func (member *Member) connClose() {
-	utils.Debug("connection is closed, member id : %s", member.ID)
 	member.isClosed = true
 }
 
@@ -63,7 +61,7 @@ func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request)
 	}
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("upgrade:", err)
+		level.Error(logger).Log("upgradeError", err)
 		return
 	}
 	cid++

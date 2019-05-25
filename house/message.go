@@ -50,7 +50,7 @@ func (message *Message) json() ([]byte, error) {
 	return b, nil
 }
 
-func New(data []byte) (int, interface{}, error) {
+func newMessage(data []byte) (int, interface{}, error) {
 	m := make(map[string]interface{})
 	err := json.Unmarshal(data, &m)
 	if err != nil {
@@ -64,16 +64,16 @@ func New(data []byte) (int, interface{}, error) {
 	}
 	switch t {
 	case SEND:
-		item, err := NewMessage(m)
+		item, err := newSend(m)
 		return t, item, err
 	case HISTORY:
-		item, err := NewHisotry(m)
+		item, err := newHisotry(m)
 		return t, item, err
 	}
 	return -1, nil, errors.New("Empty")
 }
 
-func NewHisotry(historyMap map[string]interface{}) (*History, error) {
+func newHisotry(historyMap map[string]interface{}) (*History, error) {
 	history := &History{}
 
 	if historyMap["rid"] != nil {
@@ -98,7 +98,7 @@ func NewHisotry(historyMap map[string]interface{}) (*History, error) {
 	return history, nil
 }
 
-func NewMessage(msgMap map[string]interface{}) (*Message, error) {
+func newSend(msgMap map[string]interface{}) (*Message, error) {
 	msg := &Message{}
 	// message create timestamp(s)
 	msg.CreateTime = time.Now().Unix()

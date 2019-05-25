@@ -1,25 +1,36 @@
-package main
+package route
 
 import (
 	"encoding/json"
-	"github.com/leeif/mercury/house"
-	"github.com/leeif/mercury/utils"
 	"net/http"
 	"strings"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	h "github.com/leeif/mercury/house"
 )
 
-var route *Route
+var (
+	house  *h.House
+	route  *Route
+	logger log.Logger
+)
 
 type RouteFunc func(w http.ResponseWriter, r *http.Request)
 
-func init() {
-	route = &Route{
-		Get:  make(map[string]RouteFunc),
-		Post: make(map[string]RouteFunc),
-		WS:   make(map[string]RouteFunc),
+func New(l log.Logger, h *h.House) *Route {
+	if route == nil {
+		route = &Route{
+			Get:  make(map[string]RouteFunc),
+			Post: make(map[string]RouteFunc),
+			WS:   make(map[string]RouteFunc),
+		}
+		route.routeAPI()
+		route.routeWS()
 	}
-	route.routeAPI()
-	route.routeWS()
+	logger = log.With(l, "component", "route")
+	house = h
+	return route
 }
 
 type Route struct {
@@ -28,16 +39,17 @@ type Route struct {
 	WS   map[string]RouteFunc
 }
 
-func (route *Route) r(w http.ResponseWriter, r *http.Request) {
+func (route *Route) Select(w http.ResponseWriter, r *http.Request) {
 	var routeFunc RouteFunc
 	path := r.URL.Path
-	utils.Debug("path : %s", r.URL.Path)
+	level.Debug(logger).Log("path", r.URL.Path)
 	// ws
 	routeFunc = route.WS[path]
 	if routeFunc != nil {
 		routeFunc(w, r)
 		return
 	}
+
 	//api
 	switch strings.ToLower(r.Method) {
 	case "get":
@@ -61,14 +73,14 @@ func (route *Route) routeAPI() {
 			route.responseError(http.StatusBadRequest, "need id in url query", w)
 			return
 		}
-		body["token"] = house.GetHouse().GetToken(id)
+		body["token"] = house.GetToken(id)
 		route.responseOK(body, w)
 	}
 
 	route.Post["/api/room/add"] = func(w http.ResponseWriter, r *http.Request) {
-		room    := r.URL.Query().Get("room")
+		room := r.URL.Query().Get("room")
 		members := strings.Split(r.URL.Query().Get("member"), "-")
-		house.GetHouse().RoomAdd(room, members)
+		house.RoomAdd(room, members)
 		route.responseOK(nil, w)
 	}
 
@@ -84,7 +96,7 @@ func (route *Route) routeWS() {
 			route.responseError(http.StatusBadRequest, "need a token", w)
 			return
 		}
-		member := house.GetHouse().GetMemberFromToken(token)
+		member := house.GetMemberFromToken(token)
 		if member != nil {
 			member.GenerateConnection(w, r)
 		}

@@ -6,7 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"github.com/leeif/mercury/utils"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,7 +24,13 @@ var host = flag.String("host", "localhost", "chat server host address")
 var path = flag.String("path", "/ws/connect", "ws connection path")
 var member = flag.String("member", "1", "member")
 
+var logger log.Logger
 var token = ""
+
+func init () {
+	logger = log.NewLogfmtLogger(os.Stdin)
+	logger = log.With(logger, "caller", log.DefaultCaller, "component", "client")
+}
 
 type Message struct {
 	Type int    `json:"type"`
@@ -35,30 +42,30 @@ type Message struct {
 func AddRoom() {
 	url := "http://" + *host + ":" + *port + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
 	resp, err := http.Post(url, "", nil)
-	defer resp.Body.Close()
 	if err != nil {
-		utils.Error("Add Room Failed")
+		level.Error(logger).Log("Add Room Failed")
 	} else {
-		utils.Info("Add Room ID: " + TestRoom)
+		level.Info(logger).Log("Add Room ID: " + TestRoom)
 	}
+	defer resp.Body.Close()
 }
 
 func GetToken() string {
-	utils.Info("Get Token of member: " + *member)
+	level.Info(logger).Log("Get Token of member: " + *member)
 	url := "http://" + *host + ":" + *port + "/api/token?" + "id=" + *member
 	resp, err1 := http.Get(url)
 	if err1 != nil {
-		utils.Error("Get Token Error")
+		level.Error(logger).Log("Get Token Error")
 	}
 	defer resp.Body.Close()
 	b, err2 := ioutil.ReadAll(resp.Body)
 	if err2 != nil {
-		utils.Error("Read Resp Body Error")
+		level.Error(logger).Log("Read Resp Body Error")
 	}
 	res := make(map[string]interface{})
 	err3 := json.Unmarshal(b, &res)
 	if err3 != nil {
-		utils.Error("Parse Resp Body Error")
+		level.Error(logger).Log("Parse Resp Body Error")
 	}
 	body := res["body"].(map[string]interface{})
 	return body["token"].(string)
@@ -78,11 +85,11 @@ func main() {
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: *path}
 	u.RawQuery = "token=" + token
-	utils.Info("connecting to %s", u.String())
+	level.Info(logger).Log("connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		utils.Error("Can not connect " + addr + *path)
+		level.Error(logger).Log("Can not connect " + addr + *path)
 	}
 
 	defer c.Close()
@@ -95,7 +102,7 @@ func main() {
 		for {
 			_, message, err := c.ReadMessage()
 			if err != nil {
-				utils.Info("read: %v", err)
+				level.Info(logger).Log("read: %v", err)
 				return
 			}
 			m := Message{}
@@ -125,7 +132,7 @@ func main() {
 			}
 			err = c.WriteMessage(websocket.TextMessage, b)
 			if err != nil {
-				utils.Info("write:", err)
+				level.Error(logger).Log("write:", err)
 				return
 			}
 		}
@@ -136,12 +143,12 @@ func main() {
 		case <-done:
 			return
 		case <-interrupt:
-			utils.Info("interrupt")
+			level.Info(logger).Log("interrupt")
 
 			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
 			if err != nil {
-				utils.Info("write close:", err)
+				level.Info(logger).Log("write close:", err)
 				return
 			}
 			select {

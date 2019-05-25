@@ -2,9 +2,6 @@ package storage
 
 import (
 	"reflect"
-
-	"github.com/leeif/mercury/utils"
-
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 )
 
@@ -18,7 +15,6 @@ func (m *MemberInMemory) Insert(members ...interface{}) {
 		entries[i] = members[i].(avl.Entry)
 	}
 	m.member, _ = m.member.Insert(entries...)
-	utils.Debug("member len %v", m.member.Len())
 }
 
 func (m *MemberInMemory) Get(mid ...string) []avl.Entry {

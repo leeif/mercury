@@ -1,7 +1,6 @@
 package house
 
 import (
-	"github.com/leeif/mercury/utils"
 	"github.com/leeif/mercury/storage"
 )
 
@@ -43,8 +42,7 @@ func (room *Room) TransferMessage(message *Message) {
 	for _, member := range members {
 		if member != nil {
 			if !member.isClosed {
-				utils.Debug("member id : %s", member.ID)
-				if b, err := message.json(); err  == nil {
+				if b, err := message.json(); err == nil {
 					member.conn.Send <- b
 					// position increament, should be locked in the furture
 					position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
@@ -76,4 +74,3 @@ func (room *Room) Work() {
 	go room.ReceiveMessage()
 	go room.ReceiveMember()
 }
-
