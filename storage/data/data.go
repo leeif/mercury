@@ -1,4 +1,4 @@
-package storage
+package data
 
 import (
 	"reflect"
@@ -49,21 +49,21 @@ type MessageBase struct {
 }
 
 type RoomMemberIndex struct {
-	rid string
-	mid string
+	RID string
+	MID string
 }
 
 func (rmi *RoomMemberIndex) Compare(entry avl.Entry) int {
 	other := entry.(*RoomMemberIndex)
-	if rmi.rid == other.rid {
-		if other.mid == "" || rmi.mid == other.mid {
+	if rmi.RID == other.RID {
+		if other.MID == "" || rmi.MID == other.MID {
 			return 0
-		} else if rmi.mid > other.mid {
+		} else if rmi.MID > other.MID {
 			return 1
 		} else {
 			return -1
 		}
-	} else if rmi.rid > other.rid {
+	} else if rmi.RID > other.RID {
 		return 1
 	} else {
 		return -1
@@ -71,21 +71,21 @@ func (rmi *RoomMemberIndex) Compare(entry avl.Entry) int {
 }
 
 type MemberRoomIndex struct {
-	mid string
-	rid string
+	MID string
+	RID string
 }
 
 func (mri *MemberRoomIndex) Compare(entry avl.Entry) int {
 	other := entry.(*MemberRoomIndex)
-	if mri.mid == other.mid {
-		if other.rid == "" || mri.rid == other.rid {
+	if mri.MID == other.MID {
+		if other.RID == "" || mri.RID == other.RID {
 			return 0
-		} else if mri.rid > other.rid {
+		} else if mri.RID > other.RID {
 			return 1
 		} else {
 			return -1
 		}
-	} else if mri.mid > other.mid {
+	} else if mri.MID > other.MID {
 		return 1
 	} else {
 		return -1
@@ -93,22 +93,22 @@ func (mri *MemberRoomIndex) Compare(entry avl.Entry) int {
 }
 
 type RoomMemberMessageIndex struct {
-	// id of "roomID-memberID"
-	rmid  string
-	msgid string
+	// id of "roomid-memberid"
+	RMID  string
+	Msgid string
 }
 
 func (rmmi *RoomMemberMessageIndex) Compare(entry avl.Entry) int {
 	other := entry.(*RoomMemberMessageIndex)
-	if rmmi.rmid == other.rmid {
-		if other.msgid == "" || rmmi.msgid == other.msgid {
+	if rmmi.RMID == other.RMID {
+		if other.Msgid == "" || rmmi.Msgid == other.Msgid {
 			return 0
-		} else if rmmi.msgid > other.msgid {
+		} else if rmmi.Msgid > other.Msgid {
 			return 1
 		} else {
 			return -1
 		}
-	} else if rmmi.rmid > other.rmid {
+	} else if rmmi.RMID > other.RMID {
 		return 1
 	} else {
 		return -1

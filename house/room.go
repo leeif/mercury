@@ -1,11 +1,11 @@
 package house
 
 import (
-	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/storage/data"
 )
 
 type Room struct {
-	storage.RoomBase
+	data.RoomBase
 	receivceMember chan *Member
 	receiveMessage chan *Message
 }
@@ -33,8 +33,8 @@ func (room *Room) ReceiveMember() {
 }
 
 func (room *Room) TransferMessage(message *Message) {
-	mid := house.store.Index.GetMemberFromRoom(room.ID)
-	entries := house.store.Member.Get(mid...)
+	mid := house.Store.Index.GetMemberFromRoom(room.ID)
+	entries := house.Store.Member.Get(mid...)
 	members := make([]*Member, len(entries))
 	for i := range entries {
 		members[i] = entries[i].(*Member)
@@ -45,8 +45,8 @@ func (room *Room) TransferMessage(message *Message) {
 				if b, err := message.json(); err == nil {
 					member.conn.Send <- b
 					// position increament, should be locked in the furture
-					position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-					house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+					position := house.Store.Index.GetRoomMemberMessage(room.ID, member.ID)
+					house.Store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
 				}
 			}
 		}
@@ -54,8 +54,8 @@ func (room *Room) TransferMessage(message *Message) {
 }
 
 func (room *Room) TransferUnReadMessage(member *Member) {
-	position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-	messages := house.store.Message.GetUnRead(room.ID, position)
+	position := house.Store.Index.GetRoomMemberMessage(room.ID, member.ID)
+	messages := house.Store.Message.GetUnRead(room.ID, position)
 	if messages == nil {
 		return
 	}
@@ -64,8 +64,8 @@ func (room *Room) TransferUnReadMessage(member *Member) {
 		if b, err := message.json(); err == nil && !member.isClosed {
 			member.conn.Send <- b
 			// position increament, should be locked in the furture
-			position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-			house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+			position := house.Store.Index.GetRoomMemberMessage(room.ID, member.ID)
+			house.Store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
 		}
 	}
 }

@@ -1,24 +1,15 @@
-package route
+package server
 
 import (
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	h "github.com/leeif/mercury/house"
-)
-
-var (
-	house  *h.House
-	route  *Route
-	logger log.Logger
 )
 
 type RouteFunc func(w http.ResponseWriter, r *http.Request)
 
-func New(l log.Logger, h *h.House) *Route {
+func NewRoute() *Route {
 	if route == nil {
 		route = &Route{
 			Get:  make(map[string]RouteFunc),
@@ -28,8 +19,6 @@ func New(l log.Logger, h *h.House) *Route {
 		route.routeAPI()
 		route.routeWS()
 	}
-	logger = log.With(l, "component", "route")
-	house = h
 	return route
 }
 
@@ -98,7 +87,7 @@ func (route *Route) routeWS() {
 		}
 		member := house.GetMemberFromToken(token)
 		if member != nil {
-			member.GenerateConnection(w, r)
+			member.GenerateConnection(w, r, house.ConnPool)
 		}
 	}
 }

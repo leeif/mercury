@@ -15,14 +15,20 @@ const (
 )
 
 var (
+	cid    int
 	logger log.Logger
 )
 
+type ConnConfig struct {
+
+}
+
 // Connection struct for each websocket connection
 type Connection struct {
-	Ws   *websocket.Conn
-	Cid  int
-	Send chan []byte
+	Ws       *websocket.Conn
+	Cid      int
+	Send     chan []byte
+	Closed   bool
 }
 
 // Reader :
@@ -70,6 +76,19 @@ func (c *Connection) Writer(callback func(int, []byte)) {
 	}
 }
 
-func WithLogger(l log.Logger) {
+type Pool struct {
+	config *ConnConfig
+	cons   []*Connection
+}
+
+func (p *Pool) New(ws *websocket.Conn) *Connection {
+	cid++
+	conn := &Connection{Ws: ws, Cid: cid, Send: make(chan []byte, 256)}
+	conn.Closed = false
+	return conn
+}
+
+func NewPool(config *ConnConfig, l log.Logger) *Pool {
 	logger = log.With(l, "component", "connection")
+	return &Pool{}
 }

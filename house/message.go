@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
-	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/storage/data"
 )
 
 const (
@@ -26,7 +26,7 @@ type History struct {
 }
 
 type Message struct {
-	storage.MessageBase
+	data.MessageBase
 }
 
 type Response struct {

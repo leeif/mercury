@@ -13,13 +13,12 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
 	"github.com/gorilla/websocket"
 )
 
 const TestRoom = "2333"
 
-var port = flag.String("port", "9090", "chat server port")
+var port = flag.String("port", "6010", "chat server port")
 var host = flag.String("host", "localhost", "chat server host address")
 var path = flag.String("path", "/ws/connect", "ws connection path")
 var member = flag.String("member", "1", "member")
@@ -43,15 +42,15 @@ func AddRoom() {
 	url := "http://" + *host + ":" + *port + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
 	resp, err := http.Post(url, "", nil)
 	if err != nil {
-		level.Error(logger).Log("Add Room Failed")
+		level.Error(logger).Log("Failed")
 	} else {
-		level.Info(logger).Log("Add Room ID: " + TestRoom)
+		level.Info(logger).Log("RoomID", TestRoom)
 	}
 	defer resp.Body.Close()
 }
 
 func GetToken() string {
-	level.Info(logger).Log("Get Token of member: " + *member)
+	level.Info(logger).Log("Token", *member)
 	url := "http://" + *host + ":" + *port + "/api/token?" + "id=" + *member
 	resp, err1 := http.Get(url)
 	if err1 != nil {
