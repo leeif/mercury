@@ -1,11 +1,11 @@
 package house
 
 import (
-	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/storage/data"
 )
 
 type Room struct {
-	storage.RoomBase
+	data.RoomBase
 	receivceMember chan *Member
 	receiveMessage chan *Message
 }
@@ -33,8 +33,8 @@ func (room *Room) ReceiveMember() {
 }
 
 func (room *Room) TransferMessage(message *Message) {
-	mid := house.store.Index.GetMemberFromRoom(room.ID)
-	entries := house.store.Member.Get(mid...)
+	mid := house.Store.GetMemberFromRoom(room.ID)
+	entries := house.Store.GetMember(mid...)
 	members := make([]*Member, len(entries))
 	for i := range entries {
 		members[i] = entries[i].(*Member)
@@ -45,8 +45,7 @@ func (room *Room) TransferMessage(message *Message) {
 				if b, err := message.json(); err == nil {
 					member.conn.Send <- b
 					// position increament, should be locked in the furture
-					position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-					house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+					house.Store.SetRoomMemberMessage(room.ID, member.ID, message.ID)
 				}
 			}
 		}
@@ -54,18 +53,17 @@ func (room *Room) TransferMessage(message *Message) {
 }
 
 func (room *Room) TransferUnReadMessage(member *Member) {
-	position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-	messages := house.store.Message.GetUnRead(room.ID, position)
+	msg_id := house.Store.GetRoomMemberMessage(room.ID, member.ID)
+	messages := house.Store.GetUnReadMessage(room.ID, msg_id)
 	if messages == nil {
 		return
 	}
 	for _, v := range messages {
-		message := v.(*Message)
+		message := &Message{MessageBase: *v}
 		if b, err := message.json(); err == nil && !member.isClosed {
 			member.conn.Send <- b
 			// position increament, should be locked in the furture
-			position := house.store.Index.GetRoomMemberMessage(room.ID, member.ID)
-			house.store.Index.SetRoomMemberMessage(room.ID, member.ID, position+1)
+			house.Store.SetRoomMemberMessage(room.ID, member.ID, v.ID)
 		}
 	}
 }

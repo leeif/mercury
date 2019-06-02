@@ -3,8 +3,8 @@ package house
 import (
 	"encoding/json"
 	"errors"
-	"time"
-	"github.com/leeif/mercury/storage"
+
+	"github.com/leeif/mercury/storage/data"
 )
 
 const (
@@ -19,19 +19,19 @@ var (
 
 type History struct {
 	// room id
-	RID      string
+	RID string
 	// start msg id
-	MsgID    int
-	Offest   int
+	MsgID  int
+	Offest int
 }
 
 type Message struct {
-	storage.MessageBase
+	data.MessageBase
 }
 
 type Response struct {
-	Status string         `json:"status"`
-	Body   interface{}    `json:"body"`
+	Status string      `json:"status"`
+	Body   interface{} `json:"body"`
 }
 
 func (reponse *Response) json() ([]byte, error) {
@@ -82,14 +82,14 @@ func newHisotry(historyMap map[string]interface{}) (*History, error) {
 		return nil, errors.New("No Room ID")
 	}
 
-	if historyMap["msg_id"] != nil {
-		history.MsgID = int(historyMap["msg_id"].(float64))
+	if historyMap["msgid"] != nil {
+		history.MsgID = int(historyMap["msgid"].(float64))
 	} else {
 		return nil, errors.New("No Start Msg ID")
 	}
 
-	if historyMap["offest"] != nil {
-		history.Offest = int(historyMap["offest"].(float64))
+	if historyMap["offset"] != nil {
+		history.Offest = int(historyMap["offset"].(float64))
 	} else {
 		// default
 		history.Offest = DEFAULTOFFEST
@@ -100,8 +100,6 @@ func newHisotry(historyMap map[string]interface{}) (*History, error) {
 
 func newSend(msgMap map[string]interface{}) (*Message, error) {
 	msg := &Message{}
-	// message create timestamp(s)
-	msg.CreateTime = time.Now().Unix()
 
 	if msgMap["mid"] != nil {
 		msg.MID = msgMap["mid"].(string)
@@ -110,9 +108,6 @@ func newSend(msgMap map[string]interface{}) (*Message, error) {
 	if msgMap["rid"] != nil {
 		msg.RID = msgMap["rid"].(string)
 	}
-
-	msgID++
-	msg.ID = msgID
 
 	if msgMap["text"] != nil {
 		msg.Text = msgMap["text"].(string)

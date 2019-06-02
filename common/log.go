@@ -2,7 +2,6 @@ package common
 
 import (
 	"os"
-
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
@@ -57,12 +56,12 @@ func (f *AllowedFormat) String() string {
 	return f.s
 }
 
-type Config struct {
+type LogConfig struct {
 	Level  *AllowedLevel
 	Format *AllowedFormat
 }
 
-func SetFlag(a *kingpin.Application, config *Config) {
+func SetLogFlag(a *kingpin.Application, config *LogConfig) {
 	config.Level = &AllowedLevel{}
 	a.Flag("log.level", "[debug, info, warn, error]").
 		Default("info").SetValue(config.Level)
@@ -72,7 +71,7 @@ func SetFlag(a *kingpin.Application, config *Config) {
 		Default("logfmt").SetValue(config.Format)
 }
 
-func NewLogger(config *Config) log.Logger {
+func NewLogger(config *LogConfig) log.Logger {
 	var l log.Logger
 	if config.Format.s == "logfmt" {
 		l = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))

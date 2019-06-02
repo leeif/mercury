@@ -1,28 +1,40 @@
 package main
 
 import (
-	"flag"
-	"net/http"
-	"github.com/leeif/mercury/route"
-	"github.com/leeif/mercury/house"
-	"github.com/leeif/mercury/connection"
-	"github.com/leeif/mercury/common"
-	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
-	"path/filepath"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"fmt"
 	"os"
+	"path/filepath"
+	_ "github.com/go-sql-driver/mysql"
+	conf "github.com/leeif/mercury/config"
+	"github.com/leeif/mercury/common"
+	"github.com/leeif/mercury/storage"
+	c "github.com/leeif/mercury/connection"
+	h "github.com/leeif/mercury/house"
+	"github.com/leeif/mercury/server"
+	"github.com/pkg/errors"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func main() {
-	var port = flag.String("port", "9090", "chat server port")
-	var host = flag.String("host", "localhost", "chat server host address")
-	addr := *host + ":" + *port
+	config := conf.Config{
+		LogConfig:    common.LogConfig{},
+		ServerConfig: server.ServerConfig{},
+	}
 
 	a := kingpin.New(filepath.Base(os.Args[0]), "Mercury server")
-	logConfig := common.Config{}
-	common.SetFlag(a, &logConfig)
+	a.HelpFlag.Short('h')
+
+	// config file path
+	a.Flag("config.file", "configure file path").Default("mc.conf").StringVar(&config.ConfigFile)
+	
+	// load server around command line option
+	server.SetServerFlag(a, &config.ServerConfig)
+
+	// load log around command line option
+	common.SetLogFlag(a, &config.LogConfig)
+
+	// load storage around command line option
+	storage.SetLogFlag(a, &config.StorageConfig)
 
 	_, err := a.Parse(os.Args[1:])
 	if err != nil {
@@ -31,16 +43,11 @@ func main() {
 		os.Exit(2)
 	}
 
+	logger   := common.NewLogger(&config.LogConfig)
+	connPool := c.NewPool(nil, logger)
 
-	logger := common.NewLogger(&logConfig)
+	s        := storage.NewStore(logger, &config.StorageConfig)
+	house    := h.NewHouse(logger, s, connPool)
 
-	house := house.NewHouse(logger)
-	connection.WithLogger(logger)
-	rt := route.New(logger, house)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		rt.Select(w, r)
-	})
-
-	level.Error(logger).Log(http.ListenAndServe(addr, nil))
+	server.Serve(&config.ServerConfig, house, logger)
 }

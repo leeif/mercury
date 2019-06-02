@@ -6,16 +6,11 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
 	c "github.com/leeif/mercury/connection"
-	"github.com/leeif/mercury/storage"
-)
-
-var (
-	// global connection id
-	cid = 0
+	"github.com/leeif/mercury/storage/data"
 )
 
 type Member struct {
-	storage.MemberBase
+	data.MemberBase
 	conn     *c.Connection
 	isClosed bool
 }
@@ -41,10 +36,13 @@ func (member *Member) connRecevMessage(data []byte) {
 		house.roomMessage(message)
 	case HISTORY:
 		history := item.(*History)
+		level.Debug(logger).Log("offset", history.Offest)
 		messages := house.roomHistory(history)
-		res := Response{Status: "ok", Body: messages}
-		if b, err := res.json(); err == nil {
-			member.conn.Send <- b
+		for _, message := range messages {
+			msg := &Message{MessageBase: *message}
+			if b, err := msg.json(); err == nil {
+				member.conn.Send <- b
+			}
 		}
 	}
 }
@@ -54,7 +52,7 @@ func (member *Member) connClose() {
 }
 
 // GenerateConnection is to handle each websocket connection
-func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request) {
+func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request, connPool *c.Pool) {
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -64,13 +62,12 @@ func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request)
 		level.Error(logger).Log("upgradeError", err)
 		return
 	}
-	cid++
-	member.conn = &c.Connection{Ws: ws, Cid: cid, Send: make(chan []byte, 256)}
+	member.conn = connPool.New(ws)
 	member.isClosed = false
 	go member.conn.Reader(member.connCallback)
 	go member.conn.Writer(member.connCallback)
-	rids := house.store.Index.GetRoomFromMember(member.ID)
-	entries := house.store.Room.Get(rids...)
+	rids := house.Store.GetRoomFromMember(member.ID)
+	entries := house.Store.GetRoom(rids...)
 	for _, v := range entries {
 		if v != nil {
 			room := v.(*Room)
