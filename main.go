@@ -45,7 +45,8 @@ func main() {
 
 	logger   := common.NewLogger(&config.LogConfig)
 	connPool := c.NewPool(nil, logger)
-	s        := storage.NewStore(&config.StorageConfig)
+
+	s        := storage.NewStore(logger, &config.StorageConfig)
 	house    := h.NewHouse(logger, s, connPool)
 
 	server.Serve(&config.ServerConfig, house, logger)

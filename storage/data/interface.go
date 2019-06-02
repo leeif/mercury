@@ -1,31 +1,25 @@
 package data
 
-import (
-	avl "github.com/Workiva/go-datastructures/tree/avl"
-)
+type Store interface {
+	// member
+	InsertMember(...interface{})
+	GetMember(...string) []interface{}
 
-type Member interface {
-	Insert(...interface{})
-	Get(...string) []avl.Entry
-}
+	// room
+	InsertRoom(...interface{})
+	InsertRoomMember(interface{}, interface{})
+	GetRoom(...string) []interface{}
 
-type Room interface {
-	Insert(...interface{})
-	Get(...string) []avl.Entry
-}
+	// token
+	InsertToken(string, string)
+	GetToken(string) string
 
-type Token interface {
-	Insert(string, string)
-	Get(string) string
-}
+	// message
+	InsertMessage(*MessageBase) int
+	GetUnReadMessage(string, int) []*MessageBase
+	GetHistoryMessage(string, int, int) []*MessageBase
 
-type Message interface {
-	Insert(string, ...interface{})
-	GetUnRead(string, int) []interface{}
-	GetHistory(string, int, int) []interface{}
-}
-
-type Index interface {
+	// index
 	SetMemberOfRoom(string, string)
 	GetMemberFromRoom(string) []string
 	SetRoomOfMember(string, string)

@@ -2,16 +2,17 @@ package conf
 
 import (
 	"io/ioutil"
+
 	"github.com/leeif/mercury/common"
 	"github.com/leeif/mercury/server"
-	"github.com/leeif/mercury/storage"
+	sConfig "github.com/leeif/mercury/storage/config"
 )
 
 type Config struct {
 	ConfigFile    string
 	LogConfig     common.LogConfig
 	ServerConfig  server.ServerConfig
-	StorageConfig storage.StorageConfig
+	StorageConfig sConfig.StorageConfig
 }
 
 func LoadConfigFile(filepath string, config Config) {

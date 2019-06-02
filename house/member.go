@@ -36,10 +36,13 @@ func (member *Member) connRecevMessage(data []byte) {
 		house.roomMessage(message)
 	case HISTORY:
 		history := item.(*History)
+		level.Debug(logger).Log("offset", history.Offest)
 		messages := house.roomHistory(history)
-		res := Response{Status: "ok", Body: messages}
-		if b, err := res.json(); err == nil {
-			member.conn.Send <- b
+		for _, message := range messages {
+			msg := &Message{MessageBase: *message}
+			if b, err := msg.json(); err == nil {
+				member.conn.Send <- b
+			}
 		}
 	}
 }
@@ -60,10 +63,11 @@ func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	member.conn = connPool.New(ws)
+	member.isClosed = false
 	go member.conn.Reader(member.connCallback)
 	go member.conn.Writer(member.connCallback)
-	rids := house.Store.Index.GetRoomFromMember(member.ID)
-	entries := house.Store.Room.Get(rids...)
+	rids := house.Store.GetRoomFromMember(member.ID)
+	entries := house.Store.GetRoom(rids...)
 	for _, v := range entries {
 		if v != nil {
 			room := v.(*Room)

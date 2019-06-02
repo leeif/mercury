@@ -5,7 +5,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/leeif/mercury/common"
 	c "github.com/leeif/mercury/connection"
-	"github.com/leeif/mercury/storage"
+	"github.com/leeif/mercury/storage/data"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 type House struct {
-	Store    *storage.Store
+	Store    data.Store
 	ConnPool *c.Pool
 }
 
@@ -23,8 +23,10 @@ func (house *House) RoomAdd(roomID string, members []string) {
 	// add members' ids into room
 	for _, v := range members {
 		member := house.GetMember(v)
-		house.Store.Index.SetMemberOfRoom(room.ID, member.ID)
-		house.Store.Index.SetRoomOfMember(member.ID, room.ID)
+		// insert new room into storage engin
+		house.Store.InsertRoomMember(room, member)
+		house.Store.SetMemberOfRoom(room.ID, member.ID)
+		house.Store.SetRoomOfMember(member.ID, room.ID)
 	}
 }
 
@@ -35,18 +37,19 @@ func (house *House) RoomDelete(roomID string) {
 func (house *House) roomMessage(message *Message) {
 	room := house.GetRoom(message.RID)
 	if room != nil {
+		msg_id := house.Store.InsertMessage(&message.MessageBase)
+		message.ID = msg_id
 		room.receiveMessage <- message
-		house.Store.Message.Insert(room.ID, message)
 	}
 }
 
-func (house *House) roomHistory(history *History) []interface{} {
-	messages := house.Store.Message.GetHistory(history.RID, history.MsgID, history.Offest)
+func (house *House) roomHistory(history *History) []*data.MessageBase {
+	messages := house.Store.GetHistoryMessage(history.RID, history.MsgID, history.Offest)
 	return messages
 }
 
 func (house *House) GetRoom(id string) *Room {
-	res := house.Store.Room.Get(id)
+	res := house.Store.GetRoom(id)
 	if len(res) > 0 && res[0] != nil {
 		level.Debug(logger).Log("roomID", res[0].(*Room).ID)
 		return res[0].(*Room)
@@ -61,14 +64,13 @@ func (house *House) NewRoom(id string) *Room {
 	}
 	newRoom.ID = id
 	newRoom.Work()
-	// insert new room into storage engin
-	house.Store.Room.Insert(newRoom)
 
+	house.Store.InsertRoom(newRoom)
 	return newRoom
 }
 
 func (house *House) GetMember(id string) *Member {
-	res := house.Store.Member.Get(id)
+	res := house.Store.GetMember(id)
 	if len(res) > 0 && res[0] != nil {
 		return res[0].(*Member)
 	}
@@ -83,32 +85,32 @@ func (house *House) NewMember(id string) *Member {
 		isClosed: true,
 	}
 	newMember.ID = id
-	// insert new member into avl
-	house.Store.Member.Insert(newMember)
+	house.Store.InsertMember(newMember)
 	return newMember
 }
 
 func (house *House) GetMemberFromToken(token string) *Member {
-	id := house.Store.Token.Get(token)
+	id := house.Store.GetToken(token)
 
 	if id == "" {
 		return nil
 	}
 
-	res := house.Store.Member.Get(id)
+	res := house.Store.GetMember(id)
 	if len(res) > 0 && res[0] != nil {
 		return res[0].(*Member)
 	}
-	return nil
+	return house.NewMember(id)
 }
 
 func (house *House) GetToken(id string) string {
 	token := common.TokenGenerator(id)
-	house.Store.Token.Insert(token, id)
+	house.Store.InsertToken(token, id)
+	level.Debug(logger).Log("token", token)
 	return token
 }
 
-func NewHouse(l log.Logger, s *storage.Store, connPool *c.Pool) *House {
+func NewHouse(l log.Logger, s data.Store, connPool *c.Pool) *House {
 	if house == nil {
 		house = &House{
 			Store: s,
