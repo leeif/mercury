@@ -46,15 +46,17 @@ Server Configuration
 
 #### Server
 Basic server configuration
-| config | default value |
-| ---- | :----: |
+
+| config | default value |
+| ----- | :----: |
 | --server.address | 127.0.0.1  |
 | --server.port  | 6010 |
 
 #### Log
 
 Logging in mercury is using the interface provided by [go-kit](https://github.com/go-kit/kit/tree/master/log)
-| config | available value |
+
+| config | available value |
 | ---- | :----: |
 | --log.format | json(default) \| logfmt   |
 | --log.level  | info(default) \| warn \| error \| debug  |
@@ -63,7 +65,8 @@ Logging in mercury is using the interface provided by [go-kit](https://github.co
 You can choose from multiple back end storage to store the data in mercury.
 
 MySQL
-| config | default value |
+
+| config | default value |
 | ---- | :----: |
 | --mysql.host | ""  |
 | --mysql.port | ""  |
