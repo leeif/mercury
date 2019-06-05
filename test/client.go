@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -128,17 +126,7 @@ func main() {
 		reader := bufio.NewReader(os.Stdin)
 		for {
 			text, _ := reader.ReadString('\n')
-			var message Message
-			ts := strings.Split(text, ":")
-			switch ts[0] {
-			case "msg":
-				message = Message{Type: 1, RID: TestRoom, Text: ts[1]}
-			case "his":
-				msgid, _ := strconv.Atoi(ts[1])
-				offset, _ := strconv.Atoi(ts[2])
-				level.Debug(logger).Log("offset", offset)
-				message = Message{Type: 2, RID: TestRoom, Offset: offset, MsgID: msgid}
-			}
+			message := Message{Type: 1, RID: TestRoom, Text: text}
 			var b []byte
 			var err error
 			b, err = json.Marshal(message)
