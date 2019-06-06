@@ -109,7 +109,7 @@ func (m *Memory) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
 		}
 	}
 	if position != -1 && m.Message[rid] != nil && len(m.Message[rid]) > position {
-		return m.Message[rid][(position+1):]
+		return m.Message[rid][(position + 1):]
 	}
 	return nil
 }

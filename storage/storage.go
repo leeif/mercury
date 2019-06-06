@@ -1,9 +1,9 @@
 package storage
 
 import (
-	"github.com/go-kit/kit/log/level"
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/leeif/mercury/storage/config"
 	"github.com/leeif/mercury/storage/data"
 	"github.com/leeif/mercury/storage/memory"

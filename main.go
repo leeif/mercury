@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	_ "github.com/go-sql-driver/mysql"
-	conf "github.com/leeif/mercury/config"
 	"github.com/leeif/mercury/common"
-	"github.com/leeif/mercury/storage"
+	conf "github.com/leeif/mercury/config"
 	c "github.com/leeif/mercury/connection"
 	h "github.com/leeif/mercury/house"
 	"github.com/leeif/mercury/server"
+	"github.com/leeif/mercury/storage"
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 
 	// config file path
 	a.Flag("config.file", "configure file path").Default("mc.conf").StringVar(&config.ConfigFile)
-	
+
 	// load server around command line option
 	server.SetServerFlag(a, &config.ServerConfig)
 
@@ -43,11 +43,11 @@ func main() {
 		os.Exit(2)
 	}
 
-	logger   := common.NewLogger(&config.LogConfig)
+	logger := common.NewLogger(&config.LogConfig)
 	connPool := c.NewPool(nil, logger)
 
-	s        := storage.NewStore(logger, &config.StorageConfig)
-	house    := h.NewHouse(logger, s, connPool)
+	s := storage.NewStore(logger, &config.StorageConfig)
+	house := h.NewHouse(logger, s, connPool)
 
 	server.Serve(&config.ServerConfig, house, logger)
 }

@@ -1,9 +1,9 @@
 package data
 
 import (
+	"github.com/Workiva/go-datastructures/tree/avl"
 	"reflect"
 	"time"
-	"github.com/Workiva/go-datastructures/tree/avl"
 )
 
 type RoomBase struct {
@@ -43,9 +43,9 @@ type MessageBase struct {
 	// from member id
 	MID string `json:"mid"`
 	// room id
-	RID   string `json:"rid"`
-	CTime time.Time  `json:"ctime"`
-	Text  string `json:"text"`
+	RID   string    `json:"rid"`
+	CTime time.Time `json:"ctime"`
+	Text  string    `json:"text"`
 }
 
 type RoomMemberIndex struct {
