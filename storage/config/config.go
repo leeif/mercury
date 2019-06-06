@@ -6,16 +6,15 @@ type StorageConfig struct {
 }
 
 type MySQLConfig struct {
-	Host      string
-	Port      string
-	User      string
-	Password  string
+	Host     string
+	Port     string
+	User     string
+	Password string
 }
 
 type RedisConfig struct {
-	Host      string
-	Port      string
-	User      string
-	Password  string
+	Host     string
+	Port     string
+	User     string
+	Password string
 }
-

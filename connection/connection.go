@@ -1,9 +1,9 @@
 package connection
 
 import (
-	"github.com/gorilla/websocket"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gorilla/websocket"
 )
 
 // Message type
@@ -20,15 +20,14 @@ var (
 )
 
 type ConnConfig struct {
-
 }
 
 // Connection struct for each websocket connection
 type Connection struct {
-	Ws       *websocket.Conn
-	Cid      int
-	Send     chan []byte
-	Closed   bool
+	Ws     *websocket.Conn
+	Cid    int
+	Send   chan []byte
+	Closed bool
 }
 
 // Reader :
@@ -40,7 +39,7 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 	for {
 		_, message, err := c.Ws.ReadMessage()
 		if err != nil {
-			level.Error(logger).Log("readError",err)
+			level.Error(logger).Log("readError", err)
 			break
 		}
 		level.Debug(logger).Log("recvMsg", message)

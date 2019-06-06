@@ -2,8 +2,8 @@ package common
 
 import (
 	"crypto/sha1"
-	"math/rand"
 	"fmt"
+	"math/rand"
 	"time"
 )
 
@@ -25,7 +25,7 @@ func TokenGenerator(prefix string, n ...int) string {
 	randString := RandomString(noRandomCharacters)
 
 	hash := sha1.New()
-	hash.Write([]byte(prefix+randString))
+	hash.Write([]byte(prefix + randString))
 	bs := hash.Sum(nil)
 
 	return fmt.Sprintf("%x", bs)

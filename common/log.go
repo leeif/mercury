@@ -1,11 +1,11 @@
 package common
 
 import (
-	"os"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	"os"
 )
 
 var (
