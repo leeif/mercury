@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +18,25 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
 )
+
+var myDial = &net.Dialer{
+	Timeout:   30 * time.Second,
+	KeepAlive: 30 * time.Second,
+	DualStack: true,
+}
+
+// 自定义DialContext
+var myDialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+	network = "tcp4" //仅使用ipv4
+	//network = "tcp6" //仅使用ipv6
+	return myDial.DialContext(ctx, network, addr)
+}
+
+var client = &http.Client{
+	Transport: &http.Transport{
+		DialContext: myDialContext,
+	},
+}
 
 const TestRoom = "2333"
 
@@ -43,7 +64,7 @@ type Message struct {
 
 func AddRoom() {
 	url := "http://" + *host + ":" + *port + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
-	resp, err := http.Post(url, "", nil)
+	resp, err := client.Post(url, "", nil)
 	if err != nil {
 		level.Error(logger).Log("Failed")
 	} else {
@@ -55,7 +76,7 @@ func AddRoom() {
 func GetToken() string {
 	level.Info(logger).Log("Member", *member)
 	url := "http://" + *host + ":" + *port + "/api/token?" + "id=" + *member
-	resp, err1 := http.Get(url)
+	resp, err1 := client.Get(url)
 	if err1 != nil {
 		level.Error(logger).Log("Get Token Error")
 	}
@@ -89,7 +110,10 @@ func main() {
 	u.RawQuery = "token=" + token
 	level.Info(logger).Log("connecting to %s", u.String())
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	d := websocket.Dialer{
+		NetDialContext: myDialContext,
+	}
+	c, _, err := d.Dial(u.String(), nil)
 	if err != nil {
 		level.Error(logger).Log("Can not connect " + addr + *path)
 		os.Exit(1)

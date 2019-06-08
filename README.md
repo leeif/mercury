@@ -49,8 +49,11 @@ Basic server configuration
 
 | config | default value |
 | ----- | :----: |
-| --server.address | 127.0.0.1  |
+| --server.api.address | 127.0.0.1/32  |
+| --server.ws.address | 0.0.0.0/0  |
 | --server.port  | 6010 |
+
+* Mercury only recive a IPv4 remote ip now.
 
 #### Log
 

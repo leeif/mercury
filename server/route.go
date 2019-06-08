@@ -2,20 +2,22 @@ package server
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
-
 	"github.com/go-kit/kit/log/level"
 )
 
 type RouteFunc func(w http.ResponseWriter, r *http.Request)
 
-func NewRoute() *Route {
+func NewRoute(config *ServerConfig) *Route {
 	if route == nil {
 		route = &Route{
-			Get:  make(map[string]RouteFunc),
-			Post: make(map[string]RouteFunc),
-			WS:   make(map[string]RouteFunc),
+			Get:        make(map[string]RouteFunc),
+			Post:       make(map[string]RouteFunc),
+			WS:         make(map[string]RouteFunc),
+			wsAddress:  config.WSAddress,
+			apiAddress: config.APIAddress,
 		}
 		route.routeAPI()
 		route.routeWS()
@@ -24,18 +26,22 @@ func NewRoute() *Route {
 }
 
 type Route struct {
-	Get  map[string]RouteFunc
-	Post map[string]RouteFunc
-	WS   map[string]RouteFunc
+	Get        map[string]RouteFunc
+	Post       map[string]RouteFunc
+	WS         map[string]RouteFunc
+	wsAddress  *Address
+	apiAddress *Address
 }
 
 func (route *Route) Select(w http.ResponseWriter, r *http.Request) {
 	var routeFunc RouteFunc
 	path := r.URL.Path
-	level.Debug(logger).Log("path", r.URL.Path)
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	clientIP := net.ParseIP(ip)
+	level.Debug(logger).Log("clientIP", r.RemoteAddr)
 	// ws
 	routeFunc = route.WS[path]
-	if routeFunc != nil {
+	if routeFunc != nil && route.wsAddress.net.Contains(clientIP) {
 		routeFunc(w, r)
 		return
 	}
@@ -48,7 +54,7 @@ func (route *Route) Select(w http.ResponseWriter, r *http.Request) {
 		routeFunc = route.Post[path]
 	}
 
-	if routeFunc != nil {
+	if routeFunc != nil && route.apiAddress.net.Contains(clientIP) {
 		routeFunc(w, r)
 	} else {
 		route.responseError(http.StatusNotFound, "not found", w)
