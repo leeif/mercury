@@ -40,3 +40,7 @@
 [[constraint]]
   name = "github.com/go-kit/kit"
   version = "0.8.0"
+
+[[constraint]]
+  name = "github.com/jinzhu/configor"
+  version = "1.0.0"

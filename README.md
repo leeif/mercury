@@ -40,7 +40,7 @@ Merucy server receive a json format message. The client should send a json data 
 ```
 
 
-Server Configuration
+Configuration
 ---
 ### command-line flags
 
@@ -76,6 +76,13 @@ MySQL
 | --mysql.user | ""   |
 | --mysql.password |  ""  |
 
+### Configure File
+You can also configure the mercury through a config file using the https://github.com/jinzhu/configor
+
+The YAML, JSON, TOML format of configure file are supported.
+
+The default file path is `./mc.cnf.toml` and here is an example of configure file https://github.com/leeif/mercury/blob/master/config/config_file.go
+
 
 Simple Demo
 ----
@@ -107,6 +114,6 @@ send> Hello World 1
 send> Hello World 2
 ```
 
-Contact Us
+Contact Us (联系我们)
 ----
-Slack : [mushare-dev](https://mushare-dev.slack.com)
+Slack : [https://mushare-dev.slack.com](https://mushare-dev.slack.com)

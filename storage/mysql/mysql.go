@@ -84,11 +84,12 @@ func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
 		createToken,
 	}
 	for _, query := range initQuery {
-		res, err := m.db.Exec(query)
+		var err error
+		var res sql.Result
+		res, err = m.db.Exec(query)
 		m.fatalErr(err)
-		affected, err := res.RowsAffected()
+		_, err = res.RowsAffected()
 		m.fatalErr(err)
-		level.Debug(m.logger).Log("msg", affected)
 	}
 }
 
