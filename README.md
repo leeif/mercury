@@ -81,7 +81,9 @@ You can also configure the mercury through a config file using the https://githu
 
 The YAML, JSON, TOML format of configure file are supported.
 
-The default file path is `./mc.cnf.toml` and here is an example of configure file https://github.com/leeif/mercury/blob/master/config/config_file.go
+The default file path is `./mc.cnf.toml` and can be set by `--config.file` command line option.
+
+Here is an example of configure file https://github.com/leeif/mercury/blob/master/config/config_file.go
 
 
 Simple Demo
