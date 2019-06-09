@@ -8,7 +8,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 	h "github.com/leeif/mercury/house"
 	"github.com/pkg/errors"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -73,20 +72,6 @@ func (p *Port) String() string {
 	return p.s
 }
 
-func SetServerFlag(a *kingpin.Application, config *ServerConfig) {
-	config.APIAddress = &Address{}
-	a.Flag("server.api.address", "server listen address").
-		Default("127.0.0.1/32").SetValue(config.APIAddress)
-
-	config.WSAddress = &Address{}
-	a.Flag("server.ws.address", "server listen address").
-		Default("0.0.0.0/0").SetValue(config.WSAddress)
-
-	config.Port = &Port{}
-	a.Flag("server.port", "server listen port").
-		Default("6010").SetValue(config.Port)
-}
-
 func Serve(config *ServerConfig, h *h.House, l log.Logger) {
 	logger = log.With(l, "component", "server")
 	house = h
@@ -96,6 +81,8 @@ func Serve(config *ServerConfig, h *h.House, l log.Logger) {
 	})
 
 	addr := "0.0.0.0:" + config.Port.s
-	level.Debug(logger).Log("listen", addr)
+	level.Info(logger).Log("msg", "Rest api address: " + config.APIAddress.s)
+	level.Info(logger).Log("msg", "Websocket address: " + config.WSAddress.s)
+	level.Info(logger).Log("msg", "Port: " + config.Port.s)
 	level.Error(logger).Log(http.ListenAndServe(addr, nil))
 }

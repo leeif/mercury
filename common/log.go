@@ -1,11 +1,11 @@
 package common
 
 import (
+	"os"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
-	"os"
 )
 
 var (
@@ -59,16 +59,6 @@ func (f *AllowedFormat) String() string {
 type LogConfig struct {
 	Level  *AllowedLevel
 	Format *AllowedFormat
-}
-
-func SetLogFlag(a *kingpin.Application, config *LogConfig) {
-	config.Level = &AllowedLevel{}
-	a.Flag("log.level", "[debug, info, warn, error]").
-		Default("info").SetValue(config.Level)
-
-	config.Format = &AllowedFormat{}
-	a.Flag("log.format", "[logfmt, json]").
-		Default("logfmt").SetValue(config.Format)
 }
 
 func NewLogger(config *LogConfig) log.Logger {
