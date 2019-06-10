@@ -3,7 +3,6 @@ package house
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/leeif/mercury/storage/data"
 )
 

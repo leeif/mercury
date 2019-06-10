@@ -118,4 +118,4 @@ send> Hello World 2
 
 Contact Us (联系我们)
 ----
-Slack : [https://mushare-dev.slack.com](https://mushare-dev.slack.com)
+Slack : [#mushare-dev](https://mushare-dev.slack.com)
