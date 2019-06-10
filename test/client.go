@@ -251,7 +251,9 @@ func main() {
 					continue
 				}
 				if message.MID != *member {
-					appendHistory(message, history)
+					ui.Update(func() {
+						appendHistory(message, history)
+					})
 				}
 			}
 		}
