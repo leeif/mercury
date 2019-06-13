@@ -37,6 +37,25 @@
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
+  digest = "1:0e16b03c72bd42739ca68d055c10369e60d17838428f512f3b29ae115ba788e0"
+  name = "github.com/gdamore/encoding"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6289cdc94c00ac4aa177771c5fce7af2f96b626d"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:939e23f904cb50168a21dc38ca60b432a0e57482bed803fdae94223821dcad59"
+  name = "github.com/gdamore/tcell"
+  packages = [
+    ".",
+    "terminfo",
+  ]
+  pruneopts = "UT"
+  revision = "b5d0c1ac570211e469f43ff88c0c6aa4b56cc99a"
+  version = "v1.1.2"
+
+[[projects]]
   digest = "1:ce058ca1b1787a997e578c4344f9650becb5086a3512332cbedffca9950d77a1"
   name = "github.com/go-kit/kit"
   packages = [
@@ -88,12 +107,61 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
+  digest = "1:39de67207027b7374272d5ec9b1bf85457714150ba1263e8d236316629dad570"
+  name = "github.com/lucasb-eyer/go-colorful"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "30298f24079860c4dee452fdef6519b362a4a026"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:d96cb3ed0e90e9f15a50a9fe2dc49a30eef739648547e1b664868ea73fbf294b"
+  name = "github.com/marcusolsson/tui-go"
+  packages = [
+    ".",
+    "wordwrap",
+  ]
+  pruneopts = "UT"
+  revision = "4bb09120fbbb8b6e7d44d802f1e66f78bb4650a0"
+  version = "v0.4.0"
+
+[[projects]]
+  digest = "1:0356f3312c9bd1cbeda81505b7fd437501d8e778ab66998ef69f00d7f9b3a0d7"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
+  version = "v0.0.4"
+
+[[projects]]
+  digest = "1:abf08734a6527df70ed361d7c369fb580e6840d8f7a6012e5f609fdfd93b4e48"
+  name = "github.com/mitchellh/go-wordwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
   revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
   version = "v0.8.1"
+
+[[projects]]
+  digest = "1:cc38c2209a6c1f94debdfd96934865a258eac2f905a8d3f8fd56e7d0cfb85edd"
+  name = "golang.org/x/text"
+  packages = [
+    "encoding",
+    "encoding/internal/identifier",
+    "internal/gen",
+    "transform",
+    "unicode/cldr",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:c25289f43ac4a68d88b02245742347c94f1e108c534dda442188015ff80669b3"
@@ -129,6 +197,7 @@
     "github.com/go-sql-driver/mysql",
     "github.com/gorilla/websocket",
     "github.com/jinzhu/configor",
+    "github.com/marcusolsson/tui-go",
     "github.com/pkg/errors",
     "gopkg.in/alecthomas/kingpin.v2",
   ]

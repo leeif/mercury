@@ -1,22 +1,22 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"time"
+
+	"fmt"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
+	"github.com/marcusolsson/tui-go"
 )
 
 var myDial = &net.Dialer{
@@ -66,7 +66,8 @@ func AddRoom() {
 	url := "http://" + *host + ":" + *port + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
 	resp, err := client.Post(url, "", nil)
 	if err != nil {
-		level.Error(logger).Log("Failed")
+		level.Error(logger).Log("error", err.Error())
+		os.Exit(1)
 	} else {
 		level.Info(logger).Log("RoomID", TestRoom)
 	}
@@ -78,29 +79,32 @@ func GetToken() string {
 	url := "http://" + *host + ":" + *port + "/api/token?" + "id=" + *member
 	resp, err1 := client.Get(url)
 	if err1 != nil {
-		level.Error(logger).Log("Get Token Error")
+		level.Error(logger).Log("error", err1.Error())
+		os.Exit(1)
 	}
 	defer resp.Body.Close()
 	b, err2 := ioutil.ReadAll(resp.Body)
 	if err2 != nil {
-		level.Error(logger).Log("Read Resp Body Error")
+		level.Error(logger).Log("error", "Read Resp Body Error")
 	}
 	res := make(map[string]interface{})
 	err3 := json.Unmarshal(b, &res)
 	if err3 != nil {
-		level.Error(logger).Log("Parse Resp Body Error")
+		level.Error(logger).Log("error", "Parse Resp Body Error")
 	}
 	body := res["body"].(map[string]interface{})
 	return body["token"].(string)
 }
 
-func main() {
-	flag.Parse()
+type Connection struct {
+	Send chan Message
+	Recv chan Message
+	ws   *websocket.Conn
+}
 
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-
-	// api operation
+func (c *Connection) Init() {
+	c.Send = make(chan Message, 2)
+	c.Recv = make(chan Message, 2)
 	AddRoom()
 	token := GetToken()
 
@@ -108,81 +112,154 @@ func main() {
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: *path}
 	u.RawQuery = "token=" + token
-	level.Info(logger).Log("connecting to %s", u.String())
+	level.Info(logger).Log("msg", "connecting to "+u.String())
 
 	d := websocket.Dialer{
 		NetDialContext: myDialContext,
 	}
-	c, _, err := d.Dial(u.String(), nil)
+	var err error
+	c.ws, _, err = d.Dial(u.String(), nil)
 	if err != nil {
 		level.Error(logger).Log("Can not connect " + addr + *path)
 		os.Exit(1)
 	}
+	go c.StartSend()
+	go c.StartRecv()
+}
 
-	defer c.Close()
-
-	done := make(chan struct{})
-
-	go func() {
-		defer close(done)
-		fmt.Print("send> ")
-		for {
-			_, message, err := c.ReadMessage()
-			if err != nil {
-				level.Info(logger).Log("read: %v", err)
-				return
+func (c *Connection) StartSend() {
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if !ok {
+				// send failed
 			}
-			m := Message{}
-			err2 := json.Unmarshal(message, &m)
-			if err2 == nil {
-				if m.MID == *member {
-					fmt.Printf("receive> message From member %s : %s", m.MID, m.Text)
-				} else {
-					fmt.Printf("\nreceive> message From member %s : %s", m.MID, m.Text)
-				}
-			}
-			fmt.Print("send> ")
-		}
-	}()
-
-	go func() {
-		defer close(done)
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			text, _ := reader.ReadString('\n')
-			message := Message{Type: 1, RID: TestRoom, Text: text}
 			var b []byte
 			var err error
 			b, err = json.Marshal(message)
 			if err != nil {
 				continue
 			}
-			err = c.WriteMessage(websocket.TextMessage, b)
+			err = c.ws.WriteMessage(websocket.TextMessage, b)
 			if err != nil {
 				level.Error(logger).Log("write:", err)
-				return
+			}
+		}
+	}
+}
+
+func (c *Connection) StartRecv() {
+	for {
+		_, message, err := c.ws.ReadMessage()
+		if err != nil {
+			level.Info(logger).Log("read: %v", err)
+			return
+		}
+		m := Message{}
+		err2 := json.Unmarshal(message, &m)
+		if err2 == nil {
+			c.Recv <- m
+		}
+	}
+}
+
+func (c *Connection) Close() {
+	err := c.ws.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		level.Info(logger).Log("write close:", err)
+		return
+	}
+	c.ws.Close()
+}
+
+func appendHistory(message Message, history *tui.Box) {
+	now := time.Now()
+	history.Append(tui.NewHBox(
+		tui.NewLabel(now.Format("15:04")),
+		tui.NewPadder(1, 0, tui.NewLabel(fmt.Sprintf("<user%s>", message.MID))),
+		tui.NewLabel(message.Text),
+		tui.NewSpacer(),
+	))
+}
+
+func main() {
+	flag.Parse()
+
+	c := &Connection{}
+
+	sidebar := tui.NewVBox(
+		tui.NewLabel("CHANNELS"),
+		tui.NewLabel("#"+TestRoom),
+		tui.NewSpacer(),
+	)
+	sidebar.SetBorder(true)
+
+	history := tui.NewVBox()
+
+	historyScroll := tui.NewScrollArea(history)
+	historyScroll.SetAutoscrollToBottom(true)
+
+	historyBox := tui.NewVBox(historyScroll)
+	historyBox.SetBorder(true)
+
+	input := tui.NewEntry()
+	input.SetFocused(true)
+	input.SetSizePolicy(tui.Expanding, tui.Maximum)
+
+	inputBox := tui.NewHBox(input)
+	inputBox.SetBorder(true)
+	inputBox.SetSizePolicy(tui.Expanding, tui.Maximum)
+
+	chat := tui.NewVBox(historyBox, inputBox)
+	chat.SetSizePolicy(tui.Expanding, tui.Expanding)
+
+	input.OnSubmit(func(e *tui.Entry) {
+		message := Message{}
+		message.Text = e.Text()
+		message.RID = TestRoom
+		message.MID = *member
+		message.Type = 1
+		// send message through websocket
+		c.Send <- message
+
+		appendHistory(message, history)
+		input.SetText("")
+	})
+
+	root := tui.NewHBox(sidebar, chat)
+
+	ui, err := tui.New(root)
+	if err != nil {
+		level.Debug(logger).Log("error", err)
+	}
+
+	ui.SetKeybinding("Esc", func() {
+		ui.Quit()
+
+	})
+
+	c.Init()
+	defer c.ws.Close()
+
+	go func() {
+		for {
+			select {
+			case message, ok := <-c.Recv:
+				if !ok {
+					// send failed
+					level.Debug(logger).Log("notok")
+					continue
+				}
+				if message.MID != *member {
+					ui.Update(func() {
+						appendHistory(message, history)
+					})
+				}
 			}
 		}
 	}()
 
-	for {
-		select {
-		case <-done:
-			return
-		case <-interrupt:
-			level.Info(logger).Log("interrupt")
-
-			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-
-			if err != nil {
-				level.Info(logger).Log("write close:", err)
-				return
-			}
-			select {
-			case <-done:
-			case <-time.After(time.Second):
-			}
-			return
-		}
+	if err := ui.Run(); err != nil {
+		level.Debug(logger).Log("error", err)
 	}
 }
