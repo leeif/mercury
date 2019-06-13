@@ -3,19 +3,19 @@ Mercury
 
 What is Mercury
 ----
-Mercury is a room based chat server which is aiming to help deveplors building a chat service in a fast way. Mercury is an independent service from your app which make you can take more concentration to your app. We are also planning to make Mercury to a distributed chat server for a more scalability.
+Mercury is a room based chat prject which is aiming to help deveplors building a chat service in a fast way. Mercury is an independent service from your app which make you can take more concentration on your app. We are also planning to make Mercury to a distributed chat service for a more scalability.
 
 How Mercury Work
 ----
-The mercury is designed into two part, **Http Rest API** server and **Websocket connection** server.
+The Mercury is designed into two part, **Rest API** server and **Websocket** server.
 
-### Rest API
+### What Rest API Server does
 | API | Method | Description |
 | ---- | :----: | :----: |
 | /api/token | GET  | Get token of a user for a websocket connection |
 | /api/room/add  | POST | add members into a chat room |
 
-### Websocket connection
+### What Websocket Server does
 Connect to the server using the token.
 ```
 ws://<ip>:<port>/ws/connect?token=xxxx
@@ -57,7 +57,7 @@ Basic server configuration
 
 #### Log
 
-Logging in mercury is using the interface provided by [go-kit](https://github.com/go-kit/kit/tree/master/log)
+Logging in Mercury is using the interface provided by [go-kit](https://github.com/go-kit/kit/tree/master/log)
 
 | config | available value |
 | ---- | :----: |
@@ -65,19 +65,19 @@ Logging in mercury is using the interface provided by [go-kit](https://github.co
 | --log.level  | info(default) \| warn \| error \| debug  |
 
 #### Storage
-You can choose from multiple back end storage to store the data in mercury.
+You can choose from multiple back end storage to store the data in the Mercury.
 
 MySQL
 
 | config | default value |
 | ---- | :----: |
 | --mysql.host | ""  |
-| --mysql.port | ""  |
-| --mysql.user | ""   |
+| --mysql.port | "3306"  |
+| --mysql.user | "root"   |
 | --mysql.password |  ""  |
 
 ### Configure File
-You can also configure the mercury through a config file using the https://github.com/jinzhu/configor
+You can also configure the Mercury through a config file using the https://github.com/jinzhu/configor
 
 The YAML, JSON, TOML format of configure file are supported.
 
@@ -93,9 +93,9 @@ Simple Demo
 ~$ cd $GOPATH/src/github.com/leeif/mercury
 ~$ dep ensure
 ```
-Start mercury server in 127.0.0.1
+Start Mrcury server
 ```
-~$ go run ./ --log.level=debug
+~$ go run ./
 ```
 
 Test client
