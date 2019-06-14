@@ -72,12 +72,12 @@ MySQL
 | config | default value |
 | ---- | :----: |
 | --mysql.host | ""  |
-| --mysql.port | "3306"  |
-| --mysql.user | "root"   |
+| --mysql.port | 3306  |
+| --mysql.user | root   |
 | --mysql.password |  ""  |
 
 ### Configure File
-You can also configure the Mercury through a config file using the https://github.com/jinzhu/configor
+You can also configure the Mercury through a config file which is using the https://github.com/jinzhu/configor
 
 The YAML, JSON, TOML format of configure file are supported.
 

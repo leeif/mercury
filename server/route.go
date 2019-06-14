@@ -2,104 +2,52 @@ package server
 
 import (
 	"encoding/json"
-	"net"
 	"net/http"
 	"strings"
-	"github.com/go-kit/kit/log/level"
+
+	"github.com/julienschmidt/httprouter"
 )
 
-type RouteFunc func(w http.ResponseWriter, r *http.Request)
-
-func NewRoute(config *ServerConfig) *Route {
-	if route == nil {
-		route = &Route{
-			Get:        make(map[string]RouteFunc),
-			Post:       make(map[string]RouteFunc),
-			WS:         make(map[string]RouteFunc),
-			wsAddress:  config.WSAddress,
-			apiAddress: config.APIAddress,
-		}
-		route.routeAPI()
-		route.routeWS()
-	}
-	return route
-}
-
-type Route struct {
-	Get        map[string]RouteFunc
-	Post       map[string]RouteFunc
-	WS         map[string]RouteFunc
-	wsAddress  *Address
-	apiAddress *Address
-}
-
-func (route *Route) Select(w http.ResponseWriter, r *http.Request) {
-	var routeFunc RouteFunc
-	path := r.URL.Path
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	clientIP := net.ParseIP(ip)
-	level.Debug(logger).Log("clientIP", r.RemoteAddr)
-	// ws
-	routeFunc = route.WS[path]
-	if routeFunc != nil && route.wsAddress.net.Contains(clientIP) {
-		routeFunc(w, r)
-		return
-	}
-
-	//api
-	switch strings.ToLower(r.Method) {
-	case "get":
-		routeFunc = route.Get[path]
-	case "post":
-		routeFunc = route.Post[path]
-	}
-
-	if routeFunc != nil && route.apiAddress.net.Contains(clientIP) {
-		routeFunc(w, r)
-	} else {
-		route.responseError(http.StatusNotFound, "not found", w)
-	}
-}
-
-func (route *Route) routeAPI() {
-	route.Get["/api/token"] = func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("id")
+func newAPIRouter() http.Handler {
+	router := httprouter.New()
+	router.GET("/api/token/:id", func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		id := params.ByName("id")
 		body := make(map[string]interface{})
 		if id == "" {
-			route.responseError(http.StatusBadRequest, "need id in url query", w)
+			responseError(http.StatusBadRequest, "need id in url query", w)
 			return
 		}
 		body["token"] = house.GetToken(id)
-		route.responseOK(body, w)
-	}
+		responseOK(body, w)
+	})
 
-	route.Post["/api/room/add"] = func(w http.ResponseWriter, r *http.Request) {
+	router.POST("/api/room/add", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		room := r.URL.Query().Get("room")
 		members := strings.Split(r.URL.Query().Get("member"), "-")
 		house.RoomAdd(room, members)
-		route.responseOK(nil, w)
-	}
-
-	route.Post["/api/room/delete"] = func(w http.ResponseWriter, r *http.Request) {
-
-	}
+		responseOK(nil, w)
+		return
+	})
+	return router
 }
 
-func (route *Route) routeWS() {
-	route.WS["/ws/connect"] = func(w http.ResponseWriter, r *http.Request) {
+func newWSRouter() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws/connect", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
 		if token == "" {
-			route.responseError(http.StatusBadRequest, "need a token", w)
+			responseError(http.StatusBadRequest, "need a token", w)
 			return
 		}
 		member := house.GetMemberFromToken(token)
 		if member != nil {
 			member.GenerateConnection(w, r, house.ConnPool)
 		}
-	}
+	})
+	return mux
 }
 
-func (route *Route) responseOK(body interface{}, w http.ResponseWriter) {
+func responseOK(body interface{}, w http.ResponseWriter) {
 	res := make(map[string]interface{})
 	res["status"] = "ok"
 	if body != nil {
@@ -113,7 +61,7 @@ func (route *Route) responseOK(body interface{}, w http.ResponseWriter) {
 	}
 }
 
-func (route *Route) responseError(status int, errMsg string, w http.ResponseWriter) {
+func responseError(status int, errMsg string, w http.ResponseWriter) {
 	res := make(map[string]interface{})
 	res["status"] = "error"
 	res["error"] = errMsg

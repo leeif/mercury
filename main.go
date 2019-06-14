@@ -22,9 +22,6 @@ func main() {
 	a := kingpin.New(filepath.Base(os.Args[0]), "Mercury server")
 	a.HelpFlag.Short('h')
 
-	// config file path
-	a.Flag("config.file", "configure file path").Default("mc.cnf.toml").StringVar(&config.ConfigFile)
-
 	// load flag
 	conf.AddFlag(a, &config)
 	_, err := a.Parse(os.Args[1:])
@@ -38,10 +35,17 @@ func main() {
 	conf.LoadConfigFile(config.ConfigFile, &config)
 
 	logger := common.NewLogger(&config.Log)
+
 	connPool := conn.NewPool(nil, logger)
 
 	store := storage.NewStore(logger, &config.Storage)
+
 	house := house.NewHouse(logger, store, connPool)
 
-	server.Serve(&config.Server, house, logger)
+	exitCh := make(chan error)
+
+	// start server
+	server.Serve(&config.Server, house, logger, exitCh)
+	err = <-exitCh
+	return
 }

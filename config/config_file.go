@@ -32,7 +32,8 @@ const (
 	DefaultLogLevel   = "info"
 	DefaultAPIAddress = "127.0.0.1/32"
 	DefaultWSAddress  = "0.0.0.0/0"
-	DefaultServerPort = "6010"
+	DefaultAPIPort    = "6010"
+	DefaultWSPort     = "6009"
 	DefaultMySQLUser  = "root"
 	DefaultMySQLPort  = "3306"
 )
@@ -57,8 +58,9 @@ func LoadConfigFile(filePath string, config *Config) {
 
 		Server struct {
 			APIAddress string `default:"127.0.0.1/32"`
+			APIPort    string `default:"6009"`
 			WSAddress  string `default:"0.0.0.0/0"`
-			Port       string `default:"6010"`
+			WSPort     string `default:"6010"`
 		}
 
 		MySQL struct {
@@ -102,7 +104,12 @@ func LoadConfigFile(filePath string, config *Config) {
 		os.Exit(1)
 	}
 
-	if err := config.Server.Port.Set(c.Server.Port); err != nil {
+	if err := config.Server.APIPort.Set(c.Server.APIPort); err != nil {
+		fmt.Printf("Server config error: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	if err := config.Server.WSPort.Set(c.Server.WSPort); err != nil {
 		fmt.Printf("Server config error: %s\n", err.Error())
 		os.Exit(1)
 	}

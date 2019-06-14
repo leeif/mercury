@@ -82,7 +82,11 @@ type Pool struct {
 
 func (p *Pool) New(ws *websocket.Conn) *Connection {
 	cid++
-	conn := &Connection{Ws: ws, Cid: cid, Send: make(chan []byte, 256)}
+	conn := &Connection{
+		Ws:   ws,
+		Cid:  cid,
+		Send: make(chan []byte, 256),
+	}
 	conn.Closed = false
 	return conn
 }

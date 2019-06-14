@@ -3,6 +3,7 @@ package common
 import (
 	"crypto/sha1"
 	"fmt"
+	"sync"
 	"math/rand"
 	"time"
 )
@@ -42,4 +43,16 @@ func RandomString(n int) string {
 
 func uuid() {
 
+}
+
+type WaitGroupWrapper struct {
+	sync.WaitGroup
+}
+
+func (w *WaitGroupWrapper) Wrap (cb func()) {
+	w.Add(1)
+	go func() {
+		cb()
+		w.Done()
+	}()
 }

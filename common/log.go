@@ -69,6 +69,9 @@ func NewLogger(config *LogConfig) log.Logger {
 		l = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 	}
 	l = level.NewFilter(l, config.Level.o)
-	l = log.With(l, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+	l = log.With(l, "ts", log.DefaultTimestampUTC)
+	if config.Level.s == "debug" {
+		l = log.With(l, "caller", log.DefaultCaller)
+	}
 	return l
 }

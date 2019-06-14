@@ -1,13 +1,16 @@
 package config
 
 import (
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
-	"github.com/leeif/mercury/server"
 	log "github.com/leeif/mercury/common"
+	"github.com/leeif/mercury/server"
 	storage "github.com/leeif/mercury/storage/config"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 func AddFlag(a *kingpin.Application, c *Config) {
+	// config file path
+	a.Flag("config.file", "configure file path").Default("mc.cnf.toml").StringVar(&c.ConfigFile)
+
 	SetLogFlag(a, &c.Log)
 	SetServerFlag(a, &c.Server)
 	SetStorageFlag(a, &c.Storage)
@@ -22,9 +25,13 @@ func SetServerFlag(a *kingpin.Application, config *server.ServerConfig) {
 	a.Flag("server.ws.address", "server listen address").
 		Default(DefaultWSAddress).SetValue(config.WSAddress)
 
-	config.Port = &server.Port{}
-	a.Flag("server.port", "server listen port").
-		Default(DefaultServerPort).SetValue(config.Port)
+	config.APIPort = &server.Port{}
+	a.Flag("server.api.port", "server listen port").
+		Default(DefaultAPIPort).SetValue(config.APIPort)
+
+	config.WSPort = &server.Port{}
+	a.Flag("server.ws.port", "server listen port").
+		Default(DefaultWSPort).SetValue(config.WSPort)	
 }
 
 func SetStorageFlag(a *kingpin.Application, conf *storage.StorageConfig) {
