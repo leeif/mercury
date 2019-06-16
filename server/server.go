@@ -54,7 +54,10 @@ func (a *Address) Set(s string) error {
 }
 
 func (a *Address) String() string {
-	return a.net.String()
+	if a.net != nil {
+		return a.net.String()
+	}
+	return ""
 }
 
 func (a *Address) Contains(s string) bool {

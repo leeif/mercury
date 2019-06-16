@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"reflect"
 
@@ -62,7 +61,7 @@ type MySQL struct {
 
 func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
 	var err error
-	m.logger = l
+	m.logger = log.With(l, "component", "mysql")
 	conString := config.User + ":" + config.Password +
 		"@tcp(" + config.Host + ":" + config.Port + ")/?parseTime=true"
 	level.Debug(m.logger).Log("connection", conString)
@@ -111,7 +110,7 @@ func (m *MySQL) InsertRoomMember(room interface{}, member interface{}) {
 	res, err := stmt.Exec(roomBase.ID, memberBase.ID, latestMsgID)
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("lastInsertId", id)
 	m.checkErr(err)
 }
 
@@ -185,7 +184,7 @@ func (m *MySQL) InsertToken(token string, mid string) {
 	}
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("lastInsertId", id)
 	m.checkErr(err)
 }
 
@@ -208,9 +207,8 @@ func (m *MySQL) InsertMessage(message *data.MessageBase) int {
 	res, err := stmt.Exec(message.RID, message.MID, message.Text)
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
 	m.checkErr(err)
-	level.Debug(m.logger).Log(id)
+	level.Debug(m.logger).Log("lastInsertId", id)
 	return int(id)
 }
 
@@ -287,7 +285,7 @@ func (m *MySQL) SetRoomMemberMessage(rid string, mid string, msg_id int) {
 	res, err := stmt.Exec(msg_id, rid, mid)
 	m.checkErr(err)
 	id, err := res.RowsAffected()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("rowsAffected", id)
 	m.checkErr(err)
 }
 

@@ -40,8 +40,8 @@ var client = &http.Client{
 
 const TestRoom = "2333"
 
-var apiPort = flag.String("api.port", "6010", "api server port")
-var wsPort = flag.String("ws.port", "6009", "ws server port")
+var apiPort = flag.String("api.port", "6009", "api server port")
+var wsPort = flag.String("ws.port", "6010", "ws server port")
 var host = flag.String("host", "localhost", "chat server host address")
 var path = flag.String("path", "/ws/connect", "ws connection path")
 var member = flag.String("member", "1", "member")
