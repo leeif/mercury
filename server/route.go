@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-kit/kit/log/level"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -12,22 +14,27 @@ func newAPIRouter() http.Handler {
 	router := httprouter.New()
 	router.GET("/api/token/:id", func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		id := params.ByName("id")
-		body := make(map[string]interface{})
 		if id == "" {
 			responseError(http.StatusBadRequest, "need id in url query", w)
 			return
 		}
-		body["token"] = house.GetToken(id)
+		body := make(map[string]interface{})
+		body["token"] = house.NewToken(id)
 		responseOK(body, w)
+		return
 	})
 
 	router.POST("/api/room/add", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		room := r.URL.Query().Get("room")
-		members := strings.Split(r.URL.Query().Get("member"), "-")
-		house.RoomAdd(room, members)
+		members := r.URL.Query().Get("member")
+		if room == "" || members == "" {
+			responseError(http.StatusBadRequest, "bad request", w)
+		}
+		house.RoomAdd(room, strings.Split(members, "-"))
 		responseOK(nil, w)
 		return
 	})
+
 	return router
 }
 
@@ -35,13 +42,14 @@ func newWSRouter() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws/connect", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
-		if token == "" {
-			responseError(http.StatusBadRequest, "need a token", w)
+		mid := r.URL.Query().Get("mid")
+		if token == "" || mid == "" {
+			responseError(http.StatusBadRequest, "bad request", w)
 			return
 		}
-		member := house.GetMemberFromToken(token)
-		if member != nil {
-			member.GenerateConnection(w, r, house.ConnPool)
+		err := house.MemberConnect(w, r, mid, token)
+		if err != nil {
+			level.Warn(logger).Log("msg", err)
 		}
 	})
 	return mux

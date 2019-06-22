@@ -8,10 +8,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	env string
-)
-
 type AllowedLevel struct {
 	s string
 	o level.Option

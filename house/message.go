@@ -3,6 +3,7 @@ package house
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/leeif/mercury/storage/data"
 )
 
@@ -17,6 +18,7 @@ var (
 )
 
 type History struct {
+	MID string
 	// room id
 	RID string
 	// start msg id

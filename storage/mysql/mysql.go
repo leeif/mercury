@@ -158,7 +158,7 @@ func (m *MySQL) GetMember(mid ...string) []interface{} {
 	return m.memoryStore.GetMember(mid...)
 }
 
-func (m *MySQL) InsertToken(token string, mid string) {
+func (m *MySQL) InsertToken(mid string, token string) {
 	var query string
 	var rows *sql.Rows
 	var res sql.Result
@@ -188,16 +188,16 @@ func (m *MySQL) InsertToken(token string, mid string) {
 	m.checkErr(err)
 }
 
-func (m *MySQL) GetToken(token string) string {
-	query := "select mid from mercury.`token` where token=?"
-	rows, err := m.db.Query(query, token)
+func (m *MySQL) GetToken(mid string) string {
+	query := "select token from mercury.`token` where mid=?"
+	rows, err := m.db.Query(query, mid)
 	m.checkErr(err)
-	var mid string
+	var token string
 	for rows.Next() {
-		err := rows.Scan(&mid)
+		err := rows.Scan(&token)
 		m.checkErr(err)
 	}
-	return mid
+	return token
 }
 
 func (m *MySQL) InsertMessage(message *data.MessageBase) int {

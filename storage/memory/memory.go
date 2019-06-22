@@ -127,12 +127,12 @@ func (m *Memory) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
 	return nil
 }
 
-func (m *Memory) InsertToken(token string, mid string) {
-	m.Token[token] = mid
+func (m *Memory) InsertToken(mid string, token string) {
+	m.Token[mid] = token
 }
 
-func (m *Memory) GetToken(token string) string {
-	return m.Token[token]
+func (m *Memory) GetToken(mid string) string {
+	return m.Token[mid]
 }
 
 func (m *Memory) SetMemberOfRoom(rid string, mid string) {

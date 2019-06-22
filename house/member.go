@@ -3,24 +3,26 @@ package house
 import (
 	"net/http"
 
+	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/gorilla/websocket"
+	"github.com/leeif/mercury/common"
 	c "github.com/leeif/mercury/connection"
 	"github.com/leeif/mercury/storage/data"
 )
 
 type Member struct {
 	data.MemberBase
-	conn     *c.Connection
-	isClosed bool
+	logger           log.Logger
+	storage          data.Store
+	conn             *c.Connection
+	houseMessageChan chan *Message
+	houseHistoryChan chan *History
 }
 
 func (member *Member) connCallback(flag int, data []byte) {
 	switch flag {
 	case c.MSG:
 		member.connRecevMessage(data)
-	case c.CLOSE:
-		member.connClose()
 	}
 }
 
@@ -33,45 +35,55 @@ func (member *Member) connRecevMessage(data []byte) {
 	case SEND:
 		message := item.(*Message)
 		message.MID = member.ID
-		house.roomMessage(message)
+		member.broadcastMessage(message)
 	case HISTORY:
 		history := item.(*History)
-		level.Debug(logger).Log("offset", history.Offest)
-		messages := house.roomHistory(history)
-		for _, message := range messages {
-			msg := &Message{MessageBase: *message}
-			if b, err := msg.json(); err == nil {
-				member.conn.Send <- b
-			}
-		}
+		level.Debug(member.logger).Log("offset", history.Offest)
+		member.broadcastHistory(history)
 	}
 }
 
-func (member *Member) connClose() {
-	member.isClosed = true
+func (member *Member) broadcastMessage(message *Message) {
+	member.houseMessageChan <- message
+}
+
+func (member *Member) broadcastHistory(history *History) {
+	member.houseHistoryChan <- history
+}
+
+func (member *Member) newToken() string {
+	token := common.TokenGenerator(member.ID)
+	member.storage.InsertToken(member.ID, token)
+	level.Debug(member.logger).Log("token", token)
+	return token
+}
+
+func (member *Member) verifyToken(token string) bool {
+	t := member.storage.GetToken(member.ID)
+	if t == token {
+		return true
+	}
+	return false
 }
 
 // GenerateConnection is to handle each websocket connection
-func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request, connPool *c.Pool) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-	ws, err := upgrader.Upgrade(w, r, nil)
+func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request, connPool *c.Pool) error {
+	var err error
+	member.conn, err = connPool.New(w, r)
 	if err != nil {
-		level.Error(logger).Log("upgradeError", err)
-		return
+		return err
 	}
-	member.conn = connPool.New(ws)
-	member.isClosed = false
 	go member.conn.Reader(member.connCallback)
 	go member.conn.Writer(member.connCallback)
-	rids := house.Store.GetRoomFromMember(member.ID)
-	entries := house.Store.GetRoom(rids...)
-	for _, v := range entries {
-		if v != nil {
-			room := v.(*Room)
-			room.receivceMember <- member
-		}
-	}
+
+	return nil
+
+	// rids := house.Storage.GetRoomFromMember(member.ID)
+	// entries := house.Storage.GetRoom(rids...)
+	// for _, v := range entries {
+	// 	if v != nil {
+	// 		room := v.(*Room)
+	// 		room.memberConnectedChan <- member
+	// 	}
+	// }
 }

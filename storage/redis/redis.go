@@ -1,8 +1,8 @@
 package redis
 
 import (
+	"encoding/json"
 	"os"
-	"reflect"
 	"strconv"
 	"sync"
 
@@ -42,18 +42,7 @@ func (r *Redis) initRedis(l log.Logger, config *config.RedisConfig) {
 }
 
 func (r *Redis) InsertRoomMember(room interface{}, member interface{}) {
-	var v reflect.Value
-	v = reflect.ValueOf(room)
-	roomBase := reflect.Indirect(v).FieldByName("RoomBase").Interface().(data.RoomBase)
-	v = reflect.ValueOf(member)
-	memberBase := reflect.Indirect(v).FieldByName("MemberBase").Interface().(data.MemberBase)
-	latestMsgID := r.getLatestMessage(roomBase.ID)
-
-	field := make(map[string]interface{})
-	field["member"] = memberBase.ID
-	field["msgid"] = latestMsgID
-	err := r.client.HMSet("room_"+roomBase.ID, field).Err()
-	r.checkErr(err)
+	return
 }
 
 func (r *Redis) getLatestMessage(rid string) int {
@@ -88,27 +77,29 @@ func (r *Redis) GetMember(mid ...string) []interface{} {
 	return r.memoryStore.GetMember(mid...)
 }
 
-func (r *Redis) InsertToken(token string, mid string) {
+func (r *Redis) InsertToken(mid string, token string) {
 	field := make(map[string]interface{})
-	field["member"] = mid
-	err := r.client.HMSet("token_"+token, field).Err()
+	field[mid] = token
+	err := r.client.HMSet("token", field).Err()
 	r.checkErr(err)
 }
 
-func (r *Redis) GetToken(token string) string {
-	res, err := r.client.HMGet("token_"+token, "member").Result()
+func (r *Redis) GetToken(mid string) string {
+	res, err := r.client.HMGet("token", mid).Result()
 	r.checkErr(err)
 	return res[0].(string)
 }
 
 func (r *Redis) InsertMessage(message *data.MessageBase) int {
 	field := make(map[string]interface{})
-	field["rid"] = message.RID
-	field["mid"] = message.MID
-	field["text"] = message.Text
+	b, err := json.Marshal(message)
+	if err != nil {
+
+	}
 	r.msgIDMutex.Lock()
 	id, err := r.client.Incr("msg_id").Result()
-	err = r.client.HMSet("room_"+message.RID+"_msg_"+strconv.Itoa(int(id)), field).Err()
+	field[strconv.Itoa(int(id))] = string(b)
+	err = r.client.HMSet("message", field).Err()
 	r.checkErr(err)
 
 	err = r.client.LPush("room_"+message.RID+"_msg", strconv.Itoa(int(id))).Err()
@@ -118,7 +109,7 @@ func (r *Redis) InsertMessage(message *data.MessageBase) int {
 	return int(id)
 }
 
-func (r *Redis) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
+func (r *Redis) GetUnReadMessage(rid string, msgID int) []*data.MessageBase {
 	messages := make([]*data.MessageBase, 0)
 	sort := &redis.Sort{
 		Order: "DESC",
@@ -129,8 +120,8 @@ func (r *Redis) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
 	}
 	r.checkErr(err)
 	position := 0
-	for i, msg := range res {
-		if msg == strconv.Itoa(msg_id) {
+	for i, id := range res {
+		if id == strconv.Itoa(msgID) {
 			position = i
 			break
 		}
@@ -138,20 +129,23 @@ func (r *Redis) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
 	if len(res) == 0 {
 		return messages
 	}
-	for _, msg := range res[:position] {
+	for _, id := range res[:position] {
 		message := &data.MessageBase{}
-		res, err := r.client.HMGet("room_"+rid+"_msg_"+msg, "rid", "mid", "text").Result()
+		res, err := r.client.HMGet("message", id).Result()
 		r.checkErr(err)
-		message.ID, _ = strconv.Atoi(msg)
-		message.RID = res[0].(string)
-		message.MID = res[1].(string)
-		message.Text = res[2].(string)
+		if len(res) == 0 || res[0] == nil {
+			continue
+		}
+		err = json.Unmarshal([]byte(res[0].(string)), res[0])
+		if err != nil {
+			continue
+		}
 		messages = append([]*data.MessageBase{message}, messages...)
 	}
 	return messages
 }
 
-func (r *Redis) GetHistoryMessage(rid string, msg_id int, offset int) []*data.MessageBase {
+func (r *Redis) GetHistoryMessage(rid string, msgID int, offset int) []*data.MessageBase {
 	sort := &redis.Sort{
 		Order: "DESC",
 	}
@@ -159,8 +153,8 @@ func (r *Redis) GetHistoryMessage(rid string, msg_id int, offset int) []*data.Me
 	start, end := 0, 0
 	res, err := r.client.Sort("room_"+rid+"_msg", sort).Result()
 	r.checkErr(err)
-	for i, msg := range res {
-		if msg == string(msg_id) {
+	for i, id := range res {
+		if id == string(msgID) {
 			position = i
 			break
 		}
@@ -171,13 +165,17 @@ func (r *Redis) GetHistoryMessage(rid string, msg_id int, offset int) []*data.Me
 		start, end = position-offset, position
 	}
 	messages := make([]*data.MessageBase, 0)
-	for _, msg := range res[start:end] {
+	for _, id := range res[start:end] {
 		message := &data.MessageBase{}
-		res, err := r.client.HMGet("room_"+rid+"_msg_"+msg, "rid", "mid", "text").Result()
+		res, err := r.client.HMGet("message", id).Result()
 		r.checkErr(err)
-		message.RID = res[0].(string)
-		message.MID = res[1].(string)
-		message.Text = res[2].(string)
+		if len(res) == 0 || res[0] == nil {
+			continue
+		}
+		err = json.Unmarshal([]byte(res[0].(string)), res[0])
+		if err != nil {
+			continue
+		}
 		messages = append(messages, message)
 	}
 	return messages
@@ -205,15 +203,15 @@ func (r *Redis) GetRoomFromMember(mid string) []string {
 	return res
 }
 
-func (r *Redis) SetRoomMemberMessage(rid string, mid string, msg_id int) {
+func (r *Redis) SetRoomMemberMessage(rid string, mid string, msgID int) {
 	field := make(map[string]interface{})
-	field["msg_id"] = msg_id
-	err := r.client.HMSet("room_"+rid+"_member_"+mid, field).Err()
+	field[rid+"_"+mid] = strconv.Itoa(msgID)
+	err := r.client.HMSet("message_pos", field).Err()
 	r.checkErr(err)
 }
 
 func (r *Redis) GetRoomMemberMessage(rid string, mid string) int {
-	res, err := r.client.HMGet("room_"+rid+"_member_"+mid, "msg_id").Result()
+	res, err := r.client.HMGet("message_pos", rid+"_"+mid).Result()
 	r.checkErr(err)
 	if res[0] == nil {
 		return 0
