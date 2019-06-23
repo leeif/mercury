@@ -40,7 +40,8 @@ var client = &http.Client{
 
 const TestRoom = "2333"
 
-var port = flag.String("port", "6010", "chat server port")
+var apiPort = flag.String("api.port", "6009", "api server port")
+var wsPort = flag.String("ws.port", "6010", "ws server port")
 var host = flag.String("host", "localhost", "chat server host address")
 var path = flag.String("path", "/ws/connect", "ws connection path")
 var member = flag.String("member", "1", "member")
@@ -63,7 +64,7 @@ type Message struct {
 }
 
 func AddRoom() {
-	url := "http://" + *host + ":" + *port + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
+	url := "http://" + *host + ":" + *apiPort + "/api/room/add?" + "room=" + TestRoom + "&member=" + *member
 	resp, err := client.Post(url, "", nil)
 	if err != nil {
 		level.Error(logger).Log("error", err.Error())
@@ -76,7 +77,7 @@ func AddRoom() {
 
 func GetToken() string {
 	level.Info(logger).Log("Member", *member)
-	url := "http://" + *host + ":" + *port + "/api/token?" + "id=" + *member
+	url := "http://" + *host + ":" + *apiPort + "/api/token/" + *member
 	resp, err1 := client.Get(url)
 	if err1 != nil {
 		level.Error(logger).Log("error", err1.Error())
@@ -108,10 +109,10 @@ func (c *Connection) Init() {
 	AddRoom()
 	token := GetToken()
 
-	addr := *host + ":" + *port
+	addr := *host + ":" + *wsPort
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: *path}
-	u.RawQuery = "token=" + token
+	u.RawQuery = "token=" + token + "&" + "member=" + *member
 	level.Info(logger).Log("msg", "connecting to "+u.String())
 
 	d := websocket.Dialer{
@@ -120,7 +121,7 @@ func (c *Connection) Init() {
 	var err error
 	c.ws, _, err = d.Dial(u.String(), nil)
 	if err != nil {
-		level.Error(logger).Log("Can not connect " + addr + *path)
+		level.Error(logger).Log("error", "Can not connect "+addr+*path)
 		os.Exit(1)
 	}
 	go c.StartSend()

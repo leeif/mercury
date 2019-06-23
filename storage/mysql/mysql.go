@@ -2,9 +2,7 @@ package mysql
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
-	"reflect"
 
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 	"github.com/go-kit/kit/log"
@@ -62,7 +60,7 @@ type MySQL struct {
 
 func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
 	var err error
-	m.logger = l
+	m.logger = log.With(l, "component", "mysql")
 	conString := config.User + ":" + config.Password +
 		"@tcp(" + config.Host + ":" + config.Port + ")/?parseTime=true"
 	level.Debug(m.logger).Log("connection", conString)
@@ -93,25 +91,19 @@ func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
 	}
 }
 
-func (m *MySQL) InsertRoomMember(room interface{}, member interface{}) {
-	var v reflect.Value
-	var query string
-	v = reflect.ValueOf(room)
-	roomBase := reflect.Indirect(v).FieldByName("RoomBase").Interface().(data.RoomBase)
-	v = reflect.ValueOf(member)
-	memberBase := reflect.Indirect(v).FieldByName("MemberBase").Interface().(data.MemberBase)
-	latestMsgID := m.getLatestMessage(roomBase.ID)
-	if m.checkIfExistRoomMember(roomBase.ID, memberBase.ID) {
+func (m *MySQL) InsertRoomMember(rid string, mid string) {
+	if m.checkIfExistRoomMember(rid, mid) {
 		return
 	}
+	latestMsgID := m.getLatestMessage(rid)
 
-	query = "insert into mercury.`room` (`rid`, `mid`, `msgid`) value(?, ?, ?)"
+	query := "insert into mercury.`room` (`rid`, `mid`, `msgid`) value(?, ?, ?)"
 	stmt, err := m.db.Prepare(query)
 	m.checkErr(err)
-	res, err := stmt.Exec(roomBase.ID, memberBase.ID, latestMsgID)
+	res, err := stmt.Exec(rid, mid, latestMsgID)
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("lastInsertId", id)
 	m.checkErr(err)
 }
 
@@ -143,14 +135,6 @@ func (m *MySQL) getLatestMessage(rid string) int {
 	return msgid
 }
 
-func (m *MySQL) InsertRoom(room ...interface{}) {
-	m.memoryStore.InsertRoom(room...)
-}
-
-func (m *MySQL) GetRoom(rid ...string) []interface{} {
-	return m.memoryStore.GetRoom(rid...)
-}
-
 func (m *MySQL) InsertMember(member ...interface{}) {
 	m.memoryStore.InsertMember(member...)
 }
@@ -159,7 +143,7 @@ func (m *MySQL) GetMember(mid ...string) []interface{} {
 	return m.memoryStore.GetMember(mid...)
 }
 
-func (m *MySQL) InsertToken(token string, mid string) {
+func (m *MySQL) InsertToken(mid string, token string) {
 	var query string
 	var rows *sql.Rows
 	var res sql.Result
@@ -185,20 +169,20 @@ func (m *MySQL) InsertToken(token string, mid string) {
 	}
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("lastInsertId", id)
 	m.checkErr(err)
 }
 
-func (m *MySQL) GetToken(token string) string {
-	query := "select mid from mercury.`token` where token=?"
-	rows, err := m.db.Query(query, token)
+func (m *MySQL) GetToken(mid string) string {
+	query := "select token from mercury.`token` where mid=?"
+	rows, err := m.db.Query(query, mid)
 	m.checkErr(err)
-	var mid string
+	var token string
 	for rows.Next() {
-		err := rows.Scan(&mid)
+		err := rows.Scan(&token)
 		m.checkErr(err)
 	}
-	return mid
+	return token
 }
 
 func (m *MySQL) InsertMessage(message *data.MessageBase) int {
@@ -208,9 +192,8 @@ func (m *MySQL) InsertMessage(message *data.MessageBase) int {
 	res, err := stmt.Exec(message.RID, message.MID, message.Text)
 	m.checkErr(err)
 	id, err := res.LastInsertId()
-	fmt.Printf(string(id))
 	m.checkErr(err)
-	level.Debug(m.logger).Log(id)
+	level.Debug(m.logger).Log("lastInsertId", id)
 	return int(id)
 }
 
@@ -287,7 +270,7 @@ func (m *MySQL) SetRoomMemberMessage(rid string, mid string, msg_id int) {
 	res, err := stmt.Exec(msg_id, rid, mid)
 	m.checkErr(err)
 	id, err := res.RowsAffected()
-	fmt.Printf(string(id))
+	level.Debug(m.logger).Log("rowsAffected", id)
 	m.checkErr(err)
 }
 

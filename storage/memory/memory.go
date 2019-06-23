@@ -4,11 +4,12 @@ import (
 	"sync"
 
 	avl "github.com/Workiva/go-datastructures/tree/avl"
+	"github.com/go-kit/kit/log"
 	"github.com/leeif/mercury/storage/data"
 )
 
 var (
-	msg_id int = 0
+	msgID int = 0
 )
 
 type Memory struct {
@@ -19,7 +20,19 @@ type Memory struct {
 	RoomMember        map[string]map[string]bool
 	MemberRoom        map[string]map[string]bool
 	RommMemberMessage map[string]int
-	msg_id_mutex      sync.Mutex
+	msgIDMutex        sync.Mutex
+	logger            log.Logger
+}
+
+func (m *Memory) initMemory(l log.Logger) {
+	m.logger = log.With(l, "component", "memory")
+	m.Member = avl.NewImmutable()
+	m.Room = avl.NewImmutable()
+	m.Message = make(map[string][]*data.MessageBase)
+	m.Token = make(map[string]string)
+	m.MemberRoom = make(map[string]map[string]bool)
+	m.RoomMember = make(map[string]map[string]bool)
+	m.RommMemberMessage = make(map[string]int)
 }
 
 func (m *Memory) InsertMember(members ...interface{}) {
@@ -45,32 +58,9 @@ func (m *Memory) GetMember(mid ...string) []interface{} {
 	return res
 }
 
-func (m *Memory) InsertRoomMember(room interface{}, member interface{}) {
+func (m *Memory) InsertRoomMember(rid string, mid string) {
 	// do nothing
 	return
-}
-
-func (m *Memory) InsertRoom(rooms ...interface{}) {
-	entries := make([]avl.Entry, len(rooms))
-	for i := range entries {
-		entries[i] = rooms[i].(avl.Entry)
-	}
-	m.Room, _ = m.Room.Insert(entries...)
-}
-
-func (m *Memory) GetRoom(rid ...string) []interface{} {
-	entries := make([]avl.Entry, len(rid))
-	for i := range entries {
-		entries[i] = &data.RoomBase{ID: rid[i]}
-	}
-	rooms := m.Room.Get(entries...)
-	res := make([]interface{}, 0)
-	for _, v := range rooms {
-		if v != nil {
-			res = append(res, v.(interface{}))
-		}
-	}
-	return res
 }
 
 func (m *Memory) InsertMessage(message *data.MessageBase) int {
@@ -78,10 +68,10 @@ func (m *Memory) InsertMessage(message *data.MessageBase) int {
 	if m.Message[rid] == nil {
 		m.Message[rid] = make([]*data.MessageBase, 0)
 	}
-	m.msg_id_mutex.Lock()
-	msg_id++
-	message.ID = msg_id
-	m.msg_id_mutex.Unlock()
+	m.msgIDMutex.Lock()
+	msgID++
+	message.ID = msgID
+	m.msgIDMutex.Unlock()
 	m.Message[rid] = append(m.Message[rid], message)
 	return message.ID
 }
@@ -114,12 +104,12 @@ func (m *Memory) GetUnReadMessage(rid string, msg_id int) []*data.MessageBase {
 	return nil
 }
 
-func (m *Memory) InsertToken(token string, mid string) {
-	m.Token[token] = mid
+func (m *Memory) InsertToken(mid string, token string) {
+	m.Token[mid] = token
 }
 
-func (m *Memory) GetToken(token string) string {
-	return m.Token[token]
+func (m *Memory) GetToken(mid string) string {
+	return m.Token[mid]
 }
 
 func (m *Memory) SetMemberOfRoom(rid string, mid string) {
@@ -160,4 +150,18 @@ func (m *Memory) SetRoomMemberMessage(rid string, mid string, msg_id int) {
 func (m *Memory) GetRoomMemberMessage(rid string, mid string) int {
 	rmid := rid + ":" + mid
 	return m.RommMemberMessage[rmid]
+}
+
+func NewMemory(l log.Logger) *Memory {
+	store := &Memory{
+		Room:              avl.NewImmutable(),
+		Member:            avl.NewImmutable(),
+		Message:           make(map[string][]*data.MessageBase),
+		Token:             make(map[string]string),
+		MemberRoom:        make(map[string]map[string]bool),
+		RoomMember:        make(map[string]map[string]bool),
+		RommMemberMessage: make(map[string]int),
+	}
+
+	return store
 }

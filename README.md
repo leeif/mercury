@@ -18,7 +18,7 @@ The Mercury is designed into two part, **Rest API** server and **Websocket** ser
 ### What Websocket Server does
 Connect to the server using the token.
 ```
-ws://<ip>:<port>/ws/connect?token=xxxx
+ws://<ip>:<port>/ws/connect?token=xxxx&member=xxx
 ```
 Merucy server receive a json format message. The client should send a json data to the server in the websocket connection.
 #### send message to a chat room
@@ -51,9 +51,10 @@ Basic server configuration
 | ----- | :----: |
 | --server.api.address | 127.0.0.1/32  |
 | --server.ws.address | 0.0.0.0/0  |
-| --server.port  | 6010 |
+| --server.api.port  | 6009 |
+| --server.ws.port  | 6010 |
 
-* Mercury only recive a IPv4 remote ip now.
+* Mercury only recive a IPv4 remote ip currently.
 
 #### Log
 
@@ -68,16 +69,23 @@ Logging in Mercury is using the interface provided by [go-kit](https://github.co
 You can choose from multiple back end storage to store the data in the Mercury.
 
 MySQL
-
 | config | default value |
 | ---- | :----: |
 | --mysql.host | ""  |
-| --mysql.port | "3306"  |
-| --mysql.user | "root"   |
+| --mysql.port | 3306  |
+| --mysql.user | root   |
 | --mysql.password |  ""  |
 
+Redis
+| config | default value |
+| ---- | :----: |
+| --redis.host | ""  |
+| --redis.port | 6379  |
+| --reids.password |  ""  |
+| --redis.db |  0  |
+
 ### Configure File
-You can also configure the Mercury through a config file using the https://github.com/jinzhu/configor
+You can also configure the Mercury through a config file which is using the https://github.com/jinzhu/configor
 
 The YAML, JSON, TOML format of configure file are supported.
 

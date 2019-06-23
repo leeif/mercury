@@ -1,6 +1,9 @@
 package connection
 
 import (
+	"net/http"
+	"sync"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
@@ -10,13 +13,7 @@ import (
 const (
 	// REGISTERROOM : register user into a chat room
 	MSG = iota
-	// SENDTOROOM : send a message to a room
 	CLOSE
-)
-
-var (
-	cid    int
-	logger log.Logger
 )
 
 type ConnConfig struct {
@@ -24,25 +21,29 @@ type ConnConfig struct {
 
 // Connection struct for each websocket connection
 type Connection struct {
-	Ws     *websocket.Conn
-	Cid    int
-	Send   chan []byte
-	Closed bool
+	ws        *websocket.Conn
+	logger    log.Logger
+	Cid       int
+	sendChan  chan []byte
+	closeChan chan struct{}
+	once      sync.Once
+	Closed    bool
 }
 
 // Reader :
 func (c *Connection) Reader(callback func(int, []byte)) {
 	defer func() {
-		c.Ws.Close()
+		c.close()
 		callback(CLOSE, nil)
 	}()
 	for {
-		_, message, err := c.Ws.ReadMessage()
+		_, message, err := c.ws.ReadMessage()
 		if err != nil {
-			level.Error(logger).Log("readError", err)
-			break
+			level.Warn(c.logger).Log("readError", err)
+			close(c.closeChan)
+			return
 		}
-		level.Debug(logger).Log("recvMsg", message)
+		level.Debug(c.logger).Log("recvMsg", message)
 		callback(MSG, message)
 	}
 }
@@ -50,44 +51,85 @@ func (c *Connection) Reader(callback func(int, []byte)) {
 // Writer :
 func (c *Connection) Writer(callback func(int, []byte)) {
 	defer func() {
-		c.Ws.Close()
-		callback(CLOSE, nil)
+		c.close()
 	}()
 	for {
 		select {
-		case message, ok := <-c.Send:
+		case message, ok := <-c.sendChan:
 			if !ok {
 				// Close the connection
-				c.Ws.WriteMessage(websocket.CloseMessage, []byte{})
+				c.ws.WriteMessage(websocket.CloseMessage, []byte{})
+				level.Warn(c.logger).Log("msg", "writer close")
 				return
 			}
 
-			w, err := c.Ws.NextWriter(websocket.TextMessage)
+			w, err := c.ws.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
 			}
 			w.Write(message)
 
 			if err := w.Close(); err != nil {
+				level.Debug(c.logger).Log("closeError", err)
 				return
 			}
 		}
 	}
 }
 
+func (c *Connection) close() {
+	c.once.Do(func() {
+		close(c.sendChan)
+		c.ws.Close()
+		c.Closed = true
+	})
+}
+
+func (c *Connection) SendMessage(message []byte) {
+	c.sendChan <- message
+}
+
 type Pool struct {
+	cid    int
+	mutex  sync.Mutex
+	logger log.Logger
 	config *ConnConfig
 	cons   []*Connection
 }
 
-func (p *Pool) New(ws *websocket.Conn) *Connection {
-	cid++
-	conn := &Connection{Ws: ws, Cid: cid, Send: make(chan []byte, 256)}
-	conn.Closed = false
-	return conn
+func (p *Pool) New(w http.ResponseWriter, r *http.Request) (*Connection, error) {
+
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		level.Error(p.logger).Log("upgradeError", err)
+		return nil, err
+	}
+
+	conn := &Connection{
+		ws:        ws,
+		sendChan:  make(chan []byte, 256),
+		closeChan: make(chan struct{}),
+		logger:    p.logger,
+	}
+
+	p.increCID(conn)
+	p.cons = append(p.cons, conn)
+	return conn, nil
+}
+
+func (p *Pool) increCID(conn *Connection) {
+	p.mutex.Lock()
+	p.cid++
+	conn.Cid = p.cid
+	p.mutex.Unlock()
 }
 
 func NewPool(config *ConnConfig, l log.Logger) *Pool {
-	logger = log.With(l, "component", "connection")
-	return &Pool{}
+	return &Pool{
+		logger: log.With(l, "component", "connection"),
+	}
 }

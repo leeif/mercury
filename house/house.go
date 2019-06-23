@@ -1,32 +1,28 @@
 package house
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/leeif/mercury/common"
 	c "github.com/leeif/mercury/connection"
 	"github.com/leeif/mercury/storage/data"
 )
 
-var (
-	house  *House
-	logger log.Logger
-)
+var house *House
 
 type House struct {
-	Store    data.Store
-	ConnPool *c.Pool
+	logger   log.Logger
+	storage  data.Store
+	connPool *c.Pool
 }
 
-func (house *House) RoomAdd(roomID string, members []string) {
-	room := house.GetRoom(roomID)
-	// add members' ids into room
-	for _, v := range members {
-		member := house.GetMember(v)
+func (house *House) RoomAdd(rid string, members []string) {
+	for _, mid := range members {
 		// insert new room into storage engin
-		house.Store.InsertRoomMember(room, member)
-		house.Store.SetMemberOfRoom(room.ID, member.ID)
-		house.Store.SetRoomOfMember(member.ID, room.ID)
+		house.storage.InsertRoomMember(rid, mid)
+		house.storage.SetMemberOfRoom(rid, mid)
+		house.storage.SetRoomOfMember(mid, rid)
 	}
 }
 
@@ -34,88 +30,59 @@ func (house *House) RoomDelete(roomID string) {
 
 }
 
-func (house *House) roomMessage(message *Message) {
-	room := house.GetRoom(message.RID)
-	if room != nil {
-		msg_id := house.Store.InsertMessage(&message.MessageBase)
-		message.ID = msg_id
-		room.receiveMessage <- message
-	}
-}
-
-func (house *House) roomHistory(history *History) []*data.MessageBase {
-	messages := house.Store.GetHistoryMessage(history.RID, history.MsgID, history.Offest)
-	return messages
-}
-
-func (house *House) GetRoom(id string) *Room {
-	res := house.Store.GetRoom(id)
-	if len(res) > 0 && res[0] != nil {
-		level.Debug(logger).Log("roomID", res[0].(*Room).ID)
-		return res[0].(*Room)
-	}
-	return house.NewRoom(id)
-}
-
-func (house *House) NewRoom(id string) *Room {
-	newRoom := &Room{
-		receiveMessage: make(chan *Message, 10),
-		receivceMember: make(chan *Member, 5),
-	}
-	newRoom.ID = id
-	newRoom.Work()
-
-	house.Store.InsertRoom(newRoom)
-	return newRoom
-}
-
-func (house *House) GetMember(id string) *Member {
-	res := house.Store.GetMember(id)
+func (house *House) getMember(id string) *Member {
+	res := house.storage.GetMember(id)
 	if len(res) > 0 && res[0] != nil {
 		return res[0].(*Member)
 	}
 
-	// notify all the rooms that this member has joined
-	return house.NewMember(id)
-	// return nil
+	return house.newMember(id)
 }
 
-func (house *House) NewMember(id string) *Member {
+func (house *House) newMember(id string) *Member {
 	newMember := &Member{
-		isClosed: true,
+		storage: house.storage,
 	}
 	newMember.ID = id
-	house.Store.InsertMember(newMember)
+	newMember.logger = log.With(house.logger, "component", "member")
+	house.storage.InsertMember(newMember)
 	return newMember
 }
 
-func (house *House) GetMemberFromToken(token string) *Member {
-	id := house.Store.GetToken(token)
-
-	if id == "" {
-		return nil
+func (house *House) MemberConnect(w http.ResponseWriter, r *http.Request, mid string, token string) error {
+	member := house.getMember(mid)
+	if !member.verifyToken(token) {
+		return errors.New("invalid token")
+	}
+	err := member.GenerateConnection(w, r, house.connPool)
+	if err != nil {
+		return err
 	}
 
-	res := house.Store.GetMember(id)
-	if len(res) > 0 && res[0] != nil {
-		return res[0].(*Member)
+	rids := house.storage.GetRoomFromMember(member.ID)
+	for _, rid := range rids {
+		room := newRoom(rid, house.storage)
+		room.transferUnReadMessage(member)
 	}
-	return house.NewMember(id)
+
+	go member.conn.Reader(member.connCallback)
+	go member.conn.Writer(member.connCallback)
+
+	return nil
 }
 
-func (house *House) GetToken(id string) string {
-	token := common.TokenGenerator(id)
-	house.Store.InsertToken(token, id)
-	level.Debug(logger).Log("token", token)
-	return token
+func (house *House) NewToken(mid string) string {
+	member := house.getMember(mid)
+	return member.newToken()
 }
 
-func NewHouse(l log.Logger, s data.Store, connPool *c.Pool) *House {
+func NewHouse(l log.Logger, store data.Store, connPool *c.Pool) *House {
 	if house == nil {
 		house = &House{
-			Store: s,
+			storage:  store,
+			connPool: connPool,
+			logger:   log.With(l, "component", "house"),
 		}
 	}
-	logger = log.With(l, "component", "house")
 	return house
 }

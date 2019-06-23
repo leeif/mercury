@@ -3,23 +3,26 @@ package server
 import (
 	"net"
 	"net/http"
+	"os"
 	"regexp"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/leeif/mercury/common"
 	h "github.com/leeif/mercury/house"
 	"github.com/pkg/errors"
 )
 
 var (
 	house  *h.House
-	route  *Route
 	logger log.Logger
 )
 
 type ServerConfig struct {
 	APIAddress *Address
+	APIPort    *Port
 	WSAddress  *Address
-	Port       *Port
+	WSPort     *Port
 }
 
 type Address struct {
@@ -31,13 +34,13 @@ type Address struct {
 func (a *Address) Set(s string) error {
 	var re *regexp.Regexp
 	ipString := s
-	re, _ = regexp.Compile(`^([0-9]+\.){3}([0-9])/([0-9]+)$`)
-	maskFormat := re.MatchString(ipString)
-	re, _ = regexp.Compile(`^([0-9]+\.){3}([0-9])$`)
-	ipFormat := re.MatchString(ipString)
-	if !maskFormat && !ipFormat {
+	re, _ = regexp.Compile(`^(\d+\.\d+.\d+.\d+)(|/\d+)$`)
+	match := re.FindStringSubmatch(ipString)
+	if len(match) == 0 {
 		return errors.Errorf("wrong format of address %q", s)
-	} else if !maskFormat && ipFormat {
+	}
+	// not have a range, add /32
+	if match[2] == "" {
 		ipString += "/32"
 	}
 	ip, net, err := net.ParseCIDR(ipString)
@@ -51,7 +54,10 @@ func (a *Address) Set(s string) error {
 }
 
 func (a *Address) String() string {
-	return a.s
+	if a.net != nil {
+		return a.net.String()
+	}
+	return ""
 }
 
 func (a *Address) Contains(s string) bool {
@@ -72,17 +78,51 @@ func (p *Port) String() string {
 	return p.s
 }
 
-func Serve(config *ServerConfig, h *h.House, l log.Logger) {
+func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
 	logger = log.With(l, "component", "server")
 	house = h
-	rt := NewRoute(config)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		rt.Select(w, r)
+
+	waitGroup := &common.WaitGroupWrapper{}
+
+	apiRouter := newAPIRouter(config)
+
+	apiListener, err := net.Listen("tcp4", ":"+config.APIPort.String())
+
+	if err != nil {
+		level.Error(logger).Log("error", err.Error())
+		os.Exit(1)
+	}
+
+	apiServer := &http.Server{
+		Handler: apiRouter,
+	}
+
+	waitGroup.Wrap(func() {
+		level.Info(logger).Log("msg", "API server is listening at "+config.APIAddress.String()+":"+config.APIPort.String())
+		err := apiServer.Serve(apiListener)
+		if err != nil {
+			exitCh <- err
+		}
 	})
 
-	addr := "0.0.0.0:" + config.Port.s
-	level.Info(logger).Log("msg", "Rest api address: " + config.APIAddress.s)
-	level.Info(logger).Log("msg", "Websocket address: " + config.WSAddress.s)
-	level.Info(logger).Log("msg", "Port: " + config.Port.s)
-	level.Error(logger).Log(http.ListenAndServe(addr, nil))
+	wsRouter := newWSRouter(config)
+
+	wsListener, err := net.Listen("tcp4", ":"+config.WSPort.String())
+
+	if err != nil {
+		level.Error(logger).Log("error", err.Error())
+		os.Exit(1)
+	}
+
+	wsServer := &http.Server{
+		Handler: wsRouter,
+	}
+
+	waitGroup.Wrap(func() {
+		level.Info(logger).Log("msg", "WebSocket server is listening at "+config.WSAddress.String()+":"+config.WSPort.String())
+		err := wsServer.Serve(wsListener)
+		if err != nil {
+			exitCh <- err
+		}
+	})
 }

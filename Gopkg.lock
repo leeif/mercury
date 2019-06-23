@@ -75,6 +75,22 @@
   version = "v0.4.0"
 
 [[projects]]
+  digest = "1:c950e574951c7199fb3d990d0e7a61996f40f8e646ba7cf8a557878d4c737f53"
+  name = "github.com/go-redis/redis"
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto",
+    "internal/util",
+  ]
+  pruneopts = "UT"
+  revision = "75795aa4236dc7341eefac3bbe945e68c99ef9df"
+  version = "v6.15.3"
+
+[[projects]]
   digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
@@ -97,6 +113,14 @@
   pruneopts = "UT"
   revision = "4edaf76fe18865e36de734d887f4c01bd05707af"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:f97285a3b0a496dcf8801072622230d513f69175665d94de60eb042d03387f6c"
+  name = "github.com/julienschmidt/httprouter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "348b672cd90d8190f8240323e372ecd1e66b59dc"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -150,6 +174,14 @@
   version = "v0.8.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:30d7b01d02b2705c10274b5110968918c9e3a5a52dae90b40463f6923becd52a"
+  name = "github.com/tomasen/realip"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f0c99a92ddcedd3964a269d23c8e89d9a9229be6"
+
+[[projects]]
   digest = "1:cc38c2209a6c1f94debdfd96934865a258eac2f905a8d3f8fd56e7d0cfb85edd"
   name = "golang.org/x/text"
   packages = [
@@ -194,11 +226,14 @@
     "github.com/Workiva/go-datastructures/tree/avl",
     "github.com/go-kit/kit/log",
     "github.com/go-kit/kit/log/level",
+    "github.com/go-redis/redis",
     "github.com/go-sql-driver/mysql",
     "github.com/gorilla/websocket",
     "github.com/jinzhu/configor",
+    "github.com/julienschmidt/httprouter",
     "github.com/marcusolsson/tui-go",
     "github.com/pkg/errors",
+    "github.com/tomasen/realip",
     "gopkg.in/alecthomas/kingpin.v2",
   ]
   solver-name = "gps-cdcl"
