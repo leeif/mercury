@@ -59,7 +59,7 @@ func newWSRouter(config *ServerConfig) http.Handler {
 			return
 		}
 		token := r.URL.Query().Get("token")
-		mid := r.URL.Query().Get("mid")
+		mid := r.URL.Query().Get("member")
 		// count, err := strconv.Atoi(r.URL.Query().Get("count"))
 		// if err != nil {
 		// 	responseError(http.StatusBadRequest, "bad request", w)

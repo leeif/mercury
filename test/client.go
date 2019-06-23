@@ -112,7 +112,7 @@ func (c *Connection) Init() {
 	addr := *host + ":" + *wsPort
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: *path}
-	u.RawQuery = "token=" + token + "&" + "mid=" + *member
+	u.RawQuery = "token=" + token + "&" + "member=" + *member
 	level.Info(logger).Log("msg", "connecting to "+u.String())
 
 	d := websocket.Dialer{
