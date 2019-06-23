@@ -84,7 +84,7 @@ func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
 
 	waitGroup := &common.WaitGroupWrapper{}
 
-	apiRouter := newAPIRouter()
+	apiRouter := newAPIRouter(config)
 
 	apiListener, err := net.Listen("tcp4", ":"+config.APIPort.String())
 
@@ -105,7 +105,7 @@ func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
 		}
 	})
 
-	wsRouter := newWSRouter()
+	wsRouter := newWSRouter(config)
 
 	wsListener, err := net.Listen("tcp4", ":"+config.WSPort.String())
 

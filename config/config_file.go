@@ -50,7 +50,7 @@ func LoadConfigFile(filePath string, config *Config) {
 		Server struct {
 			APIAddress string `default:"127.0.0.1/32"`
 			APIPort    string `default:"6009"`
-			WSAddress  string `default:"0.0.0.0/0"`
+			WSAddress  string `default:"127.0.0.1/32"`
 			WSPort     string `default:"6010"`
 		}
 
