@@ -69,6 +69,7 @@ Logging in Mercury is using the interface provided by [go-kit](https://github.co
 You can choose from multiple back end storage to store the data in the Mercury.
 
 MySQL
+
 | config | default value |
 | ---- | :----: |
 | --mysql.host | ""  |
@@ -76,7 +77,9 @@ MySQL
 | --mysql.user | root   |
 | --mysql.password |  ""  |
 
+
 Redis
+
 | config | default value |
 | ---- | :----: |
 | --redis.host | ""  |
