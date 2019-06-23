@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"os"
-	"reflect"
 
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 	"github.com/go-kit/kit/log"
@@ -92,22 +91,16 @@ func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
 	}
 }
 
-func (m *MySQL) InsertRoomMember(room interface{}, member interface{}) {
-	var v reflect.Value
-	var query string
-	v = reflect.ValueOf(room)
-	roomBase := reflect.Indirect(v).FieldByName("RoomBase").Interface().(data.RoomBase)
-	v = reflect.ValueOf(member)
-	memberBase := reflect.Indirect(v).FieldByName("MemberBase").Interface().(data.MemberBase)
-	latestMsgID := m.getLatestMessage(roomBase.ID)
-	if m.checkIfExistRoomMember(roomBase.ID, memberBase.ID) {
+func (m *MySQL) InsertRoomMember(rid string, mid string) {
+	if m.checkIfExistRoomMember(rid, mid) {
 		return
 	}
+	latestMsgID := m.getLatestMessage(rid)
 
-	query = "insert into mercury.`room` (`rid`, `mid`, `msgid`) value(?, ?, ?)"
+	query := "insert into mercury.`room` (`rid`, `mid`, `msgid`) value(?, ?, ?)"
 	stmt, err := m.db.Prepare(query)
 	m.checkErr(err)
-	res, err := stmt.Exec(roomBase.ID, memberBase.ID, latestMsgID)
+	res, err := stmt.Exec(rid, mid, latestMsgID)
 	m.checkErr(err)
 	id, err := res.LastInsertId()
 	level.Debug(m.logger).Log("lastInsertId", id)
@@ -140,14 +133,6 @@ func (m *MySQL) getLatestMessage(rid string) int {
 		m.checkErr(err)
 	}
 	return msgid
-}
-
-func (m *MySQL) InsertRoom(room ...interface{}) {
-	m.memoryStore.InsertRoom(room...)
-}
-
-func (m *MySQL) GetRoom(rid ...string) []interface{} {
-	return m.memoryStore.GetRoom(rid...)
 }
 
 func (m *MySQL) InsertMember(member ...interface{}) {

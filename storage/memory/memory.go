@@ -58,32 +58,9 @@ func (m *Memory) GetMember(mid ...string) []interface{} {
 	return res
 }
 
-func (m *Memory) InsertRoomMember(room interface{}, member interface{}) {
+func (m *Memory) InsertRoomMember(rid string, mid string) {
 	// do nothing
 	return
-}
-
-func (m *Memory) InsertRoom(rooms ...interface{}) {
-	entries := make([]avl.Entry, len(rooms))
-	for i := range entries {
-		entries[i] = rooms[i].(avl.Entry)
-	}
-	m.Room, _ = m.Room.Insert(entries...)
-}
-
-func (m *Memory) GetRoom(rid ...string) []interface{} {
-	entries := make([]avl.Entry, len(rid))
-	for i := range entries {
-		entries[i] = &data.RoomBase{ID: rid[i]}
-	}
-	rooms := m.Room.Get(entries...)
-	res := make([]interface{}, 0)
-	for _, v := range rooms {
-		if v != nil {
-			res = append(res, v.(interface{}))
-		}
-	}
-	return res
 }
 
 func (m *Memory) InsertMessage(message *data.MessageBase) int {

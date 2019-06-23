@@ -41,7 +41,16 @@ func (r *Redis) initRedis(l log.Logger, config *config.RedisConfig) {
 	}
 }
 
-func (r *Redis) InsertRoomMember(room interface{}, member interface{}) {
+func (r *Redis) InsertRoomMember(rid string, mid string) {
+	res, err := r.client.HMGet("message_pos", rid+"_"+mid).Result()
+	r.checkErr(err)
+	if len(res) > 0 && res[0] != nil {
+		return
+	}
+	field := make(map[string]interface{})
+	field[rid+"_"+mid] = strconv.Itoa(r.getLatestMessage(rid))
+	err = r.client.HMSet("message_pos", field).Err()
+	r.checkErr(err)
 	return
 }
 
@@ -59,14 +68,6 @@ func (r *Redis) getLatestMessage(rid string) int {
 	s, err := strconv.Atoi(res[0])
 	r.checkErr(err)
 	return s
-}
-
-func (r *Redis) InsertRoom(room ...interface{}) {
-	r.memoryStore.InsertRoom(room...)
-}
-
-func (r *Redis) GetRoom(rid ...string) []interface{} {
-	return r.memoryStore.GetRoom(rid...)
 }
 
 func (r *Redis) InsertMember(member ...interface{}) {
@@ -92,12 +93,13 @@ func (r *Redis) GetToken(mid string) string {
 
 func (r *Redis) InsertMessage(message *data.MessageBase) int {
 	field := make(map[string]interface{})
+	r.msgIDMutex.Lock()
+	id, err := r.client.Incr("msg_id").Result()
+	message.ID = int(id)
 	b, err := json.Marshal(message)
 	if err != nil {
 
 	}
-	r.msgIDMutex.Lock()
-	id, err := r.client.Incr("msg_id").Result()
 	field[strconv.Itoa(int(id))] = string(b)
 	err = r.client.HMSet("message", field).Err()
 	r.checkErr(err)
@@ -136,7 +138,7 @@ func (r *Redis) GetUnReadMessage(rid string, msgID int) []*data.MessageBase {
 		if len(res) == 0 || res[0] == nil {
 			continue
 		}
-		err = json.Unmarshal([]byte(res[0].(string)), res[0])
+		err = json.Unmarshal([]byte(res[0].(string)), &message)
 		if err != nil {
 			continue
 		}

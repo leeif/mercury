@@ -1,11 +1,10 @@
 package server
 
 import (
+	"github.com/go-kit/kit/log/level"
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/go-kit/kit/log/level"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -43,6 +42,11 @@ func newWSRouter() http.Handler {
 	mux.HandleFunc("/ws/connect", func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("token")
 		mid := r.URL.Query().Get("mid")
+		// count, err := strconv.Atoi(r.URL.Query().Get("count"))
+		// if err != nil {
+		// 	responseError(http.StatusBadRequest, "bad request", w)
+		// 	return
+		// }
 		if token == "" || mid == "" {
 			responseError(http.StatusBadRequest, "bad request", w)
 			return

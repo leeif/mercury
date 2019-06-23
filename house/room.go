@@ -2,51 +2,38 @@ package house
 
 import (
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/leeif/mercury/storage/data"
 )
 
 type Room struct {
 	data.RoomBase
-	logger              log.Logger
-	storage             data.Store
-	memberConnectedChan chan *Member
-	houseMessageChan    chan *Message
-	houseHistoryChan    chan *History
+	logger           log.Logger
+	storage          data.Store
+	houseMessageChan chan *Message
+	houseHistoryChan chan *History
 }
 
-func (room *Room) waitMessageReceive() {
-	for {
-		select {
-		case message, ok := <-room.houseMessageChan:
-			if ok && message.RID == room.ID {
-				room.transferMessage(message)
-			}
-		}
-	}
-}
+// func (room *Room) waitMessageReceive() {
+// 	for {
+// 		select {
+// 		case message, ok := <-room.houseMessageChan:
+// 			if ok && message.RID == room.ID {
+// 				room.transferMessage(message)
+// 			}
+// 		}
+// 	}
+// }
 
-func (room *Room) waitHistoryReceive() {
-	for {
-		select {
-		case history, ok := <-room.houseHistoryChan:
-			if ok && history.RID == room.ID {
-				room.transferHistory(history.MID, history.MsgID, history.Offest)
-			}
-		}
-	}
-}
-
-func (room *Room) waitMemberConnection() {
-	for {
-		select {
-		case member, ok := <-room.memberConnectedChan:
-			if ok {
-				room.transferUnReadMessage(member)
-			}
-		}
-	}
-}
+// func (room *Room) waitHistoryReceive() {
+// 	for {
+// 		select {
+// 		case history, ok := <-room.houseHistoryChan:
+// 			if ok && history.RID == room.ID {
+// 				room.transferHistory(history.MID, history.MsgID, history.Offest)
+// 			}
+// 		}
+// 	}
+// }
 
 func (room *Room) transferMessage(message *Message) {
 	msgID := room.storage.InsertMessage(&message.MessageBase)
@@ -78,14 +65,8 @@ func (room *Room) transferUnReadMessage(member *Member) {
 	room.send(messages, member)
 }
 
-func (room *Room) transferHistory(mid string, msgID int, offset int) {
-	messages := room.storage.GetHistoryMessage(room.ID, msgID, offset)
-	entries := room.storage.GetMember(mid)
-	if len(entries) == 0 || entries[0] == nil {
-		level.Debug(room.logger).Log("msg", "no such member")
-		return
-	}
-	member := entries[0].(*Member)
+func (room *Room) transferHistory(member *Member, history *History) {
+	messages := room.storage.GetHistoryMessage(room.ID, history.MsgID, history.Offest)
 	room.send(messages, member)
 }
 
@@ -99,7 +80,14 @@ func (room *Room) send(messages []*data.MessageBase, member *Member) {
 	}
 }
 
-func (room *Room) Work() {
-	go room.waitMessageReceive()
-	go room.waitMemberConnection()
+func newRoom(rid string, storage data.Store) *Room {
+	room := &Room{}
+	room.ID = rid
+	room.storage = storage
+	return room
 }
+
+// func (room *Room) Work() {
+// 	go room.waitMessageReceive()
+// 	go room.waitHistoryReceive()
+// }

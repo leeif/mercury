@@ -12,11 +12,9 @@ import (
 
 type Member struct {
 	data.MemberBase
-	logger           log.Logger
-	storage          data.Store
-	conn             *c.Connection
-	houseMessageChan chan *Message
-	houseHistoryChan chan *History
+	logger  log.Logger
+	storage data.Store
+	conn    *c.Connection
 }
 
 func (member *Member) connCallback(flag int, data []byte) {
@@ -35,20 +33,22 @@ func (member *Member) connRecevMessage(data []byte) {
 	case SEND:
 		message := item.(*Message)
 		message.MID = member.ID
-		member.broadcastMessage(message)
+		member.sendMessage(message)
 	case HISTORY:
 		history := item.(*History)
 		level.Debug(member.logger).Log("offset", history.Offest)
-		member.broadcastHistory(history)
+		member.sendHistory(history)
 	}
 }
 
-func (member *Member) broadcastMessage(message *Message) {
-	member.houseMessageChan <- message
+func (member *Member) sendMessage(message *Message) {
+	room := newRoom(message.RID, member.storage)
+	room.transferMessage(message)
 }
 
-func (member *Member) broadcastHistory(history *History) {
-	member.houseHistoryChan <- history
+func (member *Member) sendHistory(history *History) {
+	room := newRoom(history.RID, member.storage)
+	room.transferHistory(member, history)
 }
 
 func (member *Member) newToken() string {
@@ -70,20 +70,10 @@ func (member *Member) verifyToken(token string) bool {
 func (member *Member) GenerateConnection(w http.ResponseWriter, r *http.Request, connPool *c.Pool) error {
 	var err error
 	member.conn, err = connPool.New(w, r)
+
 	if err != nil {
 		return err
 	}
-	go member.conn.Reader(member.connCallback)
-	go member.conn.Writer(member.connCallback)
 
 	return nil
-
-	// rids := house.Storage.GetRoomFromMember(member.ID)
-	// entries := house.Storage.GetRoom(rids...)
-	// for _, v := range entries {
-	// 	if v != nil {
-	// 		room := v.(*Room)
-	// 		room.memberConnectedChan <- member
-	// 	}
-	// }
 }

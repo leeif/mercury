@@ -6,9 +6,7 @@ type Store interface {
 	GetMember(...string) []interface{}
 
 	// room
-	InsertRoom(...interface{})
-	InsertRoomMember(interface{}, interface{})
-	GetRoom(...string) []interface{}
+	InsertRoomMember(string, string)
 
 	// token
 	InsertToken(string, string)
