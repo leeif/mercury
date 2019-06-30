@@ -9,6 +9,7 @@ import (
 	"github.com/leeif/mercury/common"
 	conf "github.com/leeif/mercury/config"
 	conn "github.com/leeif/mercury/connection"
+	"github.com/leeif/mercury/district/index"
 	house "github.com/leeif/mercury/house"
 	"github.com/leeif/mercury/server"
 	"github.com/leeif/mercury/storage"
@@ -46,6 +47,10 @@ func main() {
 
 	// start server
 	server.Serve(&config.Server, house, logger, exitCh)
+
+	indexNode := index.NewIndexNode(logger)
+	indexNode.Start()
+
 	err = <-exitCh
 	return
 }

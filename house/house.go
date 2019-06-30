@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	c "github.com/leeif/mercury/connection"
+	"github.com/leeif/mercury/district/child"
 	"github.com/leeif/mercury/storage/data"
 )
 
@@ -64,6 +65,8 @@ func (house *House) MemberConnect(w http.ResponseWriter, r *http.Request, mid st
 		room := newRoom(rid, house.storage)
 		room.transferUnReadMessage(member)
 	}
+
+	child.RegisterMember()
 
 	go member.conn.Reader(member.connCallback)
 	go member.conn.Writer(member.connCallback)

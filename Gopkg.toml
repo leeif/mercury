@@ -34,3 +34,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/tomasen/realip"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.21.1"
