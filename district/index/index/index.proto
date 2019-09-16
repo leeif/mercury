@@ -10,7 +10,6 @@ service IndexNode {
 
 message RegisterMemberRequest {
   string mid = 1;
-  string ip  = 2;
 }
 
 message RegisterMemberReply {
@@ -22,5 +21,6 @@ message GetMemberRequest {
 }
 
 message GetMemberReply {
-  string ip = 1;
+  string mid =1;
+  string ip = 2;
 }

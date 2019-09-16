@@ -10,7 +10,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/go-redis/redis"
-	"github.com/leeif/mercury/storage/config"
+	"github.com/leeif/mercury/config"
 	"github.com/leeif/mercury/storage/data"
 	"github.com/leeif/mercury/storage/memory"
 )
@@ -22,7 +22,7 @@ type Redis struct {
 	msgIDMutex  sync.Mutex
 }
 
-func (r *Redis) initRedis(l log.Logger, config *config.RedisConfig) {
+func (r *Redis) initRedis(l log.Logger, config config.RedisConfig) {
 	var err error
 	r.logger = log.With(l, "component", "redis")
 	r.client = redis.NewClient(&redis.Options{
@@ -236,7 +236,7 @@ func (r *Redis) fatalErr(err error) {
 	}
 }
 
-func NewRedis(l log.Logger, config *config.RedisConfig) *Redis {
+func NewRedis(l log.Logger, config config.RedisConfig) *Redis {
 	redis := &Redis{}
 	redis.initRedis(l, config)
 	return redis

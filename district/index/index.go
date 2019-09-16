@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/leeif/mercury/district/index/index"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 )
 
 type IndexNode struct {
@@ -16,7 +17,16 @@ type IndexNode struct {
 }
 
 func (i IndexNode) RegisterMember(ctx context.Context, in *pb.RegisterMemberRequest) (*pb.RegisterMemberReply, error) {
-	return &pb.RegisterMemberReply{Message: "Hello " + in.Ip}, nil
+	pr, ok := peer.FromContext(ctx)
+	if !ok {
+
+	}
+	level.Info(i.logger).Log(pr.Addr.String())
+	return &pb.RegisterMemberReply{Message: "Hello " + in.Mid}, nil
+}
+
+func (i IndexNode) GetMember(ctx context.Context, in *pb.GetMemberRequest) (*pb.GetMemberReply, error) {
+	return &pb.GetMemberReply{Ip: "", Mid: in.Mid}, nil
 }
 
 func (i IndexNode) Start() {
@@ -34,7 +44,7 @@ func (i IndexNode) Start() {
 }
 
 func NewIndexNode(logger log.Logger) IndexNode {
-	log.With(logger)
+	log.With(logger, "component", "index")
 	indexNode := IndexNode{
 		logger: logger,
 	}

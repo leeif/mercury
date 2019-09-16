@@ -10,8 +10,6 @@ import (
 	"github.com/leeif/mercury/storage/data"
 )
 
-var house *House
-
 type House struct {
 	logger   log.Logger
 	storage  data.Store
@@ -80,12 +78,10 @@ func (house *House) NewToken(mid string) string {
 }
 
 func NewHouse(l log.Logger, store data.Store, connPool *c.Pool) *House {
-	if house == nil {
-		house = &House{
-			storage:  store,
-			connPool: connPool,
-			logger:   log.With(l, "component", "house"),
-		}
+	house := &House{
+		storage:  store,
+		connPool: connPool,
+		logger:   log.With(l, "component", "house"),
 	}
 	return house
 }

@@ -5,9 +5,9 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/leeif/mercury/common"
 	c "github.com/leeif/mercury/connection"
 	"github.com/leeif/mercury/storage/data"
+	"github.com/leeif/mercury/utils"
 )
 
 type Member struct {
@@ -52,7 +52,7 @@ func (member *Member) sendHistory(history *History) {
 }
 
 func (member *Member) newToken() string {
-	token := common.TokenGenerator(member.ID)
+	token := utils.TokenGenerator(member.ID)
 	member.storage.InsertToken(member.ID, token)
 	level.Debug(member.logger).Log("token", token)
 	return token
