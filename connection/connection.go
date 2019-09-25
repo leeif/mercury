@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/leeif/mercury/config"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
@@ -15,9 +17,6 @@ const (
 	MSG = iota
 	CLOSE
 )
-
-type ConnConfig struct {
-}
 
 // Connection struct for each websocket connection
 type Connection struct {
@@ -93,7 +92,7 @@ type Pool struct {
 	cid    int
 	mutex  sync.Mutex
 	logger log.Logger
-	config *ConnConfig
+	config *config.Config
 	cons   []*Connection
 }
 
@@ -128,8 +127,9 @@ func (p *Pool) increCID(conn *Connection) {
 	p.mutex.Unlock()
 }
 
-func NewPool(config *ConnConfig, l log.Logger) *Pool {
+func NewPool(config *config.Config, l log.Logger) *Pool {
 	return &Pool{
+		config: config,
 		logger: log.With(l, "component", "connection"),
 	}
 }

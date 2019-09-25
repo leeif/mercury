@@ -1,92 +1,27 @@
 package server
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"os"
-	"regexp"
+
+	"github.com/leeif/mercury/house"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/leeif/mercury/common"
-	h "github.com/leeif/mercury/house"
-	"github.com/pkg/errors"
+	"github.com/leeif/mercury/config"
+	"go.uber.org/fx"
 )
 
-var (
-	house  *h.House
-	logger log.Logger
-)
+func Serve(lc fx.Lifecycle, config *config.Config, logger log.Logger, house *house.House) {
+	cfg := config.Server
+	logger = log.With(logger, "component", "server")
 
-type ServerConfig struct {
-	APIAddress *Address
-	APIPort    *Port
-	WSAddress  *Address
-	WSPort     *Port
-}
+	apiRouter := newAPIRouter(cfg, house, logger)
 
-type Address struct {
-	s   string
-	ip  net.IP
-	net *net.IPNet
-}
-
-func (a *Address) Set(s string) error {
-	var re *regexp.Regexp
-	ipString := s
-	re, _ = regexp.Compile(`^(\d+\.\d+.\d+.\d+)(|/\d+)$`)
-	match := re.FindStringSubmatch(ipString)
-	if len(match) == 0 {
-		return errors.Errorf("wrong format of address %q", s)
-	}
-	// not have a range, add /32
-	if match[2] == "" {
-		ipString += "/32"
-	}
-	ip, net, err := net.ParseCIDR(ipString)
-	if err != nil {
-		return errors.Errorf("wrong format of address %q", s)
-	}
-	a.s = ipString
-	a.ip = ip
-	a.net = net
-	return nil
-}
-
-func (a *Address) String() string {
-	if a.net != nil {
-		return a.net.String()
-	}
-	return ""
-}
-
-func (a *Address) Contains(s string) bool {
-	ip := net.ParseIP(s)
-	return a.net.Contains(ip)
-}
-
-type Port struct {
-	s string
-}
-
-func (p *Port) Set(s string) error {
-	p.s = s
-	return nil
-}
-
-func (p *Port) String() string {
-	return p.s
-}
-
-func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
-	logger = log.With(l, "component", "server")
-	house = h
-
-	waitGroup := &common.WaitGroupWrapper{}
-
-	apiRouter := newAPIRouter(config)
-
-	apiListener, err := net.Listen("tcp4", ":"+config.APIPort.String())
+	apiAddress := ":" + cfg.API.Port.String()
+	apiListener, err := net.Listen("tcp", apiAddress)
 
 	if err != nil {
 		level.Error(logger).Log("error", err.Error())
@@ -97,17 +32,10 @@ func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
 		Handler: apiRouter,
 	}
 
-	waitGroup.Wrap(func() {
-		level.Info(logger).Log("msg", "API server is listening at "+config.APIAddress.String()+":"+config.APIPort.String())
-		err := apiServer.Serve(apiListener)
-		if err != nil {
-			exitCh <- err
-		}
-	})
+	wsRouter := newWSRouter(cfg, house, logger)
 
-	wsRouter := newWSRouter(config)
-
-	wsListener, err := net.Listen("tcp4", ":"+config.WSPort.String())
+	wsAddress := ":" + cfg.WS.Port.String()
+	wsListener, err := net.Listen("tcp", wsAddress)
 
 	if err != nil {
 		level.Error(logger).Log("error", err.Error())
@@ -118,11 +46,33 @@ func Serve(config *ServerConfig, h *h.House, l log.Logger, exitCh chan error) {
 		Handler: wsRouter,
 	}
 
-	waitGroup.Wrap(func() {
-		level.Info(logger).Log("msg", "WebSocket server is listening at "+config.WSAddress.String()+":"+config.WSPort.String())
-		err := wsServer.Serve(wsListener)
-		if err != nil {
-			exitCh <- err
-		}
+	lc.Append(fx.Hook{
+		// To mitigate the impact of deadlocks in application startup and
+		// shutdown, Fx imposes a time limit on OnStart and OnStop hooks. By
+		// default, hooks have a total of 30 seconds to complete. Timeouts are
+		// passed via Go's usual context.Context.
+		OnStart: func(context.Context) error {
+			// In production, we'd want to separate the Listen and Serve phases for
+			// better error-handling.
+			go func() {
+				level.Info(logger).Log("msg", "WebSocket server is listening at "+wsAddress)
+				wsServer.Serve(wsListener)
+			}()
+			go func() {
+				level.Info(logger).Log("msg", "API server is listening at "+apiAddress)
+				apiServer.Serve(apiListener)
+			}()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			level.Info(logger).Log("Stopping Pluto server")
+			if err := wsServer.Shutdown(ctx); err != nil {
+				return err
+			}
+			if err := apiServer.Shutdown(ctx); err != nil {
+				return err
+			}
+			return nil
+		},
 	})
 }

@@ -7,7 +7,8 @@ import (
 	avl "github.com/Workiva/go-datastructures/tree/avl"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/leeif/mercury/storage/config"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/leeif/mercury/config"
 	"github.com/leeif/mercury/storage/data"
 	"github.com/leeif/mercury/storage/memory"
 )
@@ -58,7 +59,7 @@ type MySQL struct {
 	memoryStore *memory.Memory
 }
 
-func (m *MySQL) initDB(l log.Logger, config *config.MySQLConfig) {
+func (m *MySQL) initDB(l log.Logger, config config.MySQLConfig) {
 	var err error
 	m.logger = log.With(l, "component", "mysql")
 	conString := config.User + ":" + config.Password +
@@ -299,7 +300,7 @@ func (m *MySQL) fatalErr(err error) {
 	}
 }
 
-func NewMySQL(l log.Logger, config *config.MySQLConfig) *MySQL {
+func NewMySQL(l log.Logger, config config.MySQLConfig) *MySQL {
 	mysql := &MySQL{}
 	mysql.initDB(l, config)
 	return mysql

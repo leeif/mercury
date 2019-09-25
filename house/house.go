@@ -6,10 +6,9 @@ import (
 
 	"github.com/go-kit/kit/log"
 	c "github.com/leeif/mercury/connection"
+	"github.com/leeif/mercury/district/child"
 	"github.com/leeif/mercury/storage/data"
 )
-
-var house *House
 
 type House struct {
 	logger   log.Logger
@@ -65,6 +64,8 @@ func (house *House) MemberConnect(w http.ResponseWriter, r *http.Request, mid st
 		room.transferUnReadMessage(member)
 	}
 
+	child.RegisterMember()
+
 	go member.conn.Reader(member.connCallback)
 	go member.conn.Writer(member.connCallback)
 
@@ -77,12 +78,10 @@ func (house *House) NewToken(mid string) string {
 }
 
 func NewHouse(l log.Logger, store data.Store, connPool *c.Pool) *House {
-	if house == nil {
-		house = &House{
-			storage:  store,
-			connPool: connPool,
-			logger:   log.With(l, "component", "house"),
-		}
+	house := &House{
+		storage:  store,
+		connPool: connPool,
+		logger:   log.With(l, "component", "house"),
 	}
 	return house
 }

@@ -1,51 +1,54 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"log"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"time"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/leeif/mercury/common"
-	conf "github.com/leeif/mercury/config"
-	conn "github.com/leeif/mercury/connection"
-	house "github.com/leeif/mercury/house"
+	"github.com/leeif/mercury/connection"
+	"github.com/leeif/mercury/house"
+
+	"go.uber.org/fx"
+
+	"github.com/leeif/mercury/config"
+	mlog "github.com/leeif/mercury/log"
 	"github.com/leeif/mercury/server"
 	"github.com/leeif/mercury/storage"
-	"github.com/pkg/errors"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
+var VERSION string
+
 func main() {
-	config := conf.Config{}
-
-	a := kingpin.New(filepath.Base(os.Args[0]), "Mercury server")
-	a.HelpFlag.Short('h')
-
-	// load flag
-	conf.AddFlag(a, &config)
-	_, err := a.Parse(os.Args[1:])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, errors.Wrapf(err, "Error parsing commandline arguments"))
-		a.Usage(os.Args[1:])
-		os.Exit(2)
+	app := fx.New(
+		fx.Provide(
+			func() string {
+				return VERSION
+			},
+			config.NewConfig,
+			mlog.NewLogger,
+			storage.NewStore,
+			house.NewHouse,
+			connection.NewPool,
+		),
+		fx.Invoke(server.Serve),
+		fx.NopLogger,
+	)
+	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := app.Start(startCtx); err != nil {
+		log.Fatal(err)
 	}
 
-	// load configure file
-	conf.LoadConfigFile(config.ConfigFile, &config)
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
 
-	logger := common.NewLogger(&config.Log)
+	<-quit
 
-	connPool := conn.NewPool(nil, logger)
-
-	store := storage.NewStore(logger, &config.Storage)
-
-	house := house.NewHouse(logger, store, connPool)
-
-	exitCh := make(chan error)
-
-	// start server
-	server.Serve(&config.Server, house, logger, exitCh)
-	err = <-exitCh
-	return
+	stopCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := app.Stop(stopCtx); err != nil {
+		log.Fatal(err)
+	}
 }

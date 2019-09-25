@@ -7,24 +7,14 @@ import (
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/julienschmidt/httprouter"
-	"github.com/tomasen/realip"
+	"github.com/leeif/mercury/config"
+	"github.com/leeif/mercury/house"
+	"github.com/go-kit/kit/log"
 )
 
-func checkClientIP(h httprouter.Handle, address *Address) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		clientIP := realip.FromRequest(r)
-		if address.Contains(clientIP) {
-			h(w, r, ps)
-		} else {
-			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
-	}
-}
-
-func newAPIRouter(config *ServerConfig) http.Handler {
+func newAPIRouter(config config.ServerConfig, house *house.House, logger log.Logger) http.Handler {
 	router := httprouter.New()
-	router.GET("/api/token/:id", checkClientIP(func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	router.GET("/api/token/:id", func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		id := params.ByName("id")
 		if id == "" {
 			responseError(http.StatusBadRequest, "need id in url query", w)
@@ -34,9 +24,9 @@ func newAPIRouter(config *ServerConfig) http.Handler {
 		body["token"] = house.NewToken(id)
 		responseOK(body, w)
 		return
-	}, config.APIAddress))
+	})
 
-	router.POST("/api/room/add", checkClientIP(func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	router.POST("/api/room/add", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		room := r.URL.Query().Get("room")
 		members := r.URL.Query().Get("member")
 		if room == "" || members == "" {
@@ -45,19 +35,14 @@ func newAPIRouter(config *ServerConfig) http.Handler {
 		house.RoomAdd(room, strings.Split(members, "-"))
 		responseOK(nil, w)
 		return
-	}, config.APIAddress))
+	})
 
 	return router
 }
 
-func newWSRouter(config *ServerConfig) http.Handler {
+func newWSRouter(config config.ServerConfig, house *house.House, logger log.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws/connect", func(w http.ResponseWriter, r *http.Request) {
-		// check client ip
-		clientIP := realip.FromRequest(r)
-		if !config.WSAddress.Contains(clientIP) {
-			return
-		}
 		token := r.URL.Query().Get("token")
 		mid := r.URL.Query().Get("member")
 		// count, err := strconv.Atoi(r.URL.Query().Get("count"))

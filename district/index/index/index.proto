@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package index;
+
+// The greeting service definition.
+service IndexNode {
+  rpc RegisterMember (RegisterMemberRequest) returns (RegisterMemberReply) {}
+  rpc GetMember (GetMemberRequest) returns (GetMemberReply) {}
+}
+
+message RegisterMemberRequest {
+  string mid = 1;
+}
+
+message RegisterMemberReply {
+  string message = 1;
+}
+
+message GetMemberRequest {
+  string mid = 1;
+}
+
+message GetMemberReply {
+  string mid =1;
+  string ip = 2;
+}
