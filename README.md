@@ -3,7 +3,7 @@ Mercury
 
 What is Mercury
 ----
-Mercury is a room based chat prject which is aiming to help deveplors building a chat service in a fast way. Mercury is an independent service from your app which make you can take more concentration on your app. We are also planning to make Mercury to a distributed chat service for a more scalability.
+Mercury is a room based chat project which is aiming to help deveplors building a chat service in a fast way. Mercury is an independent service from your app which make you can take more concentration on your app. We are also planning to make Mercury to a distributed chat service for a more scalability.
 
 How Mercury Work
 ----
